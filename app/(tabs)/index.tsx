@@ -1,4 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { FontFamily } from '@/constants/fonts';
 
 export default function DashboardScreen() {
   return (
@@ -14,16 +16,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF5EC',
+    backgroundColor: Colors.cream,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#2D2D2D',
+    fontFamily: FontFamily.displayBold,
+    fontSize: 36,
+    color: Colors.charcoal,
   },
   subtitle: {
+    fontFamily: FontFamily.bodyRegular,
     fontSize: 16,
-    color: '#8A8A8A',
+    color: Colors.textSecondary,
     marginTop: 8,
   },
 });
