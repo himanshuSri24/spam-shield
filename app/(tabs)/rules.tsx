@@ -1,35 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { RuleCard } from '@/components/RuleCard';
 import { EmptyState } from '@/components/EmptyState';
-
-// Mock data — will be replaced with SQLite later
-const MOCK_RULES = [
-  { id: 1, pattern: '140*', label: 'Telemarketer (140)', isActive: true, blockedCount: 89 },
-  { id: 2, pattern: '1800*', label: 'Toll-free spam', isActive: true, blockedCount: 34 },
-  { id: 3, pattern: '120*', label: 'Service calls (120)', isActive: false, blockedCount: 12 },
-  { id: 4, pattern: '+91 78*', label: 'Unknown 78 prefix', isActive: true, blockedCount: 7 },
-  { id: 5, pattern: '160*', label: 'Marketing (160)', isActive: true, blockedCount: 5 },
-];
+import { useRules } from '@/hooks/useDatabase';
 
 export default function RulesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [rules, setRules] = useState(MOCK_RULES);
+  const { rules, refresh, toggleRule, removeRule } = useRules();
 
-  const handleToggle = (id: number, value: boolean) => {
-    setRules(prev =>
-      prev.map(rule =>
-        rule.id === id ? { ...rule, isActive: value } : rule
-      )
-    );
-  };
+  // Refresh when screen comes into focus (e.g., after adding a new rule)
+  useFocusEffect(
+    React.useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
-  const activeCount = rules.filter(r => r.isActive).length;
+  const activeCount = rules.filter(r => r.is_active === 1).length;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -61,9 +52,9 @@ export default function RulesScreen() {
               key={rule.id}
               pattern={rule.pattern}
               label={rule.label}
-              isActive={rule.isActive}
-              blockedCount={rule.blockedCount}
-              onToggle={(value) => handleToggle(rule.id, value)}
+              isActive={rule.is_active === 1}
+              blockedCount={0}
+              onToggle={(value) => toggleRule(rule.id, value)}
               onPress={() => {}}
             />
           ))

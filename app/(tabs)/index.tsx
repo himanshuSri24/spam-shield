@@ -1,27 +1,44 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { StatCard } from '@/components/StatCard';
 import { BlockedCallItem } from '@/components/BlockedCallItem';
+import { useStats, useRecentBlocks, useSeedData } from '@/hooks/useDatabase';
 
-// Mock data — will be replaced with SQLite later
-const MOCK_STATS = {
-  totalBlocked: 147,
-  blockedToday: 3,
-  activeRules: 5,
-};
+function formatTimestamp(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-const MOCK_RECENT_BLOCKS = [
-  { phoneNumber: '+91 140-2839-4721', matchedPattern: '140*', timestamp: '2 min ago' },
-  { phoneNumber: '+91 140-9182-6374', matchedPattern: '140*', timestamp: '1 hr ago' },
-  { phoneNumber: '+91 1800-123-4567', matchedPattern: '1800*', timestamp: '3 hrs ago' },
-  { phoneNumber: '+91 140-7291-8834', matchedPattern: '140*', timestamp: 'Yesterday' },
-];
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHrs < 24) return `${diffHrs} hr${diffHrs > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+}
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
+  const seeded = useSeedData();
+  const { stats, refresh: refreshStats } = useStats();
+  const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
+
+  // Refresh data whenever screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (seeded) {
+        refreshStats();
+        refreshRecent();
+      }
+    }, [seeded, refreshStats, refreshRecent])
+  );
 
   return (
     <ScrollView
@@ -46,7 +63,7 @@ export default function DashboardScreen() {
       <View style={styles.statsGrid}>
         <View style={styles.statPrimary}>
           <StatCard
-            value={MOCK_STATS.totalBlocked}
+            value={stats.totalBlocked}
             label="Calls Blocked"
             sublabel="All time"
             accent
@@ -55,13 +72,13 @@ export default function DashboardScreen() {
         <View style={styles.statRow}>
           <View style={styles.statHalf}>
             <StatCard
-              value={MOCK_STATS.blockedToday}
+              value={stats.blockedToday}
               label="Today"
             />
           </View>
           <View style={styles.statHalf}>
             <StatCard
-              value={MOCK_STATS.activeRules}
+              value={stats.activeRules}
               label="Active Rules"
             />
           </View>
@@ -69,22 +86,23 @@ export default function DashboardScreen() {
       </View>
 
       {/* Recent Blocks */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Blocks</Text>
-          <Text style={styles.seeAll}>See All →</Text>
+      {recentBlocks.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Blocks</Text>
+          </View>
+          <View style={styles.recentCard}>
+            {recentBlocks.map((block) => (
+              <BlockedCallItem
+                key={block.id}
+                phoneNumber={block.phone_number}
+                matchedPattern={block.matched_pattern ?? 'Unknown rule'}
+                timestamp={formatTimestamp(block.blocked_at)}
+              />
+            ))}
+          </View>
         </View>
-        <View style={styles.recentCard}>
-          {MOCK_RECENT_BLOCKS.map((block, index) => (
-            <BlockedCallItem
-              key={index}
-              phoneNumber={block.phoneNumber}
-              matchedPattern={block.matchedPattern}
-              timestamp={block.timestamp}
-            />
-          ))}
-        </View>
-      </View>
+      )}
 
       {/* Bottom padding */}
       <View style={{ height: Spacing.xxxl }} />
@@ -159,11 +177,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.displaySemiBold,
     fontSize: 20,
     color: Colors.charcoal,
-  },
-  seeAll: {
-    fontFamily: FontFamily.bodySemiBold,
-    fontSize: 13,
-    color: Colors.coral,
   },
   recentCard: {
     backgroundColor: Colors.cardBg,

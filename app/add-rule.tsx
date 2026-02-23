@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
+import { addRule as dbAddRule } from '@/database/db';
 
 const PRESETS = [
   { pattern: '140*', label: 'Telemarketers (140)' },
@@ -72,9 +73,14 @@ export default function AddRuleScreen() {
     setLabel(preset.label);
   };
 
-  const handleSave = () => {
-    // Will wire to SQLite later
-    router.back();
+  const handleSave = async () => {
+    if (!isValid) return;
+    try {
+      await dbAddRule(pattern.trim(), label.trim());
+      router.back();
+    } catch (error) {
+      console.error('Failed to save rule:', error);
+    }
   };
 
   const isValid = pattern.trim().length > 0;

@@ -1,0 +1,141 @@
+/**
+ * React hooks for consuming the SQLite database.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Rule,
+  BlockedCall,
+  Stats,
+  getRules,
+  addRule as dbAddRule,
+  updateRuleActive as dbUpdateRuleActive,
+  deleteRule as dbDeleteRule,
+  getBlockedCalls as dbGetBlockedCalls,
+  getRecentBlockedCalls as dbGetRecentBlockedCalls,
+  getStats as dbGetStats,
+  seedDemoData,
+} from '@/database/db';
+
+export function useRules() {
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await getRules();
+      setRules(data);
+    } catch (error) {
+      console.error('Failed to load rules:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const addRule = useCallback(async (pattern: string, label: string) => {
+    const newRule = await dbAddRule(pattern, label);
+    setRules(prev => [newRule, ...prev]);
+    return newRule;
+  }, []);
+
+  const toggleRule = useCallback(async (id: number, isActive: boolean) => {
+    await dbUpdateRuleActive(id, isActive);
+    setRules(prev =>
+      prev.map(r => (r.id === id ? { ...r, is_active: isActive ? 1 : 0 } : r))
+    );
+  }, []);
+
+  const removeRule = useCallback(async (id: number) => {
+    await dbDeleteRule(id);
+    setRules(prev => prev.filter(r => r.id !== id));
+  }, []);
+
+  return { rules, loading, refresh, addRule, toggleRule, removeRule };
+}
+
+export function useBlockedCalls(limit: number = 50) {
+  const [calls, setCalls] = useState<BlockedCall[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await dbGetBlockedCalls(limit);
+      setCalls(data);
+    } catch (error) {
+      console.error('Failed to load blocked calls:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [limit]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { calls, loading, refresh };
+}
+
+export function useRecentBlocks() {
+  const [calls, setCalls] = useState<BlockedCall[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await dbGetRecentBlockedCalls(5);
+      setCalls(data);
+    } catch (error) {
+      console.error('Failed to load recent blocks:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { calls, loading, refresh };
+}
+
+export function useStats() {
+  const [stats, setStats] = useState<Stats>({
+    totalBlocked: 0,
+    blockedToday: 0,
+    blockedThisWeek: 0,
+    activeRules: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await dbGetStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { stats, loading, refresh };
+}
+
+export function useSeedData() {
+  const [seeded, setSeeded] = useState(false);
+
+  useEffect(() => {
+    seedDemoData()
+      .then(() => setSeeded(true))
+      .catch(console.error);
+  }, []);
+
+  return seeded;
+}
