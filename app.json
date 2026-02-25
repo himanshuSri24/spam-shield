@@ -29,7 +29,8 @@
           "backgroundColor": "#FFF5EC"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "./plugins/withCallScreener"
     ],
     "experiments": {
       "typedRoutes": true,
