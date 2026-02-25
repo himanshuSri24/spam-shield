@@ -1,7 +1,7 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { StatCard } from '@/components/StatCard';
@@ -26,6 +26,7 @@ function formatTimestamp(dateStr: string): string {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const seeded = useSeedData();
   const { stats, refresh: refreshStats } = useStats();
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
@@ -48,7 +49,16 @@ export default function DashboardScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.appName}>Hang Up</Text>
+        <View style={styles.headerTop}>
+          <View style={{ width: 36 }} />
+          <Text style={styles.appName}>Hang Up</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            style={styles.settingsButton}
+            activeOpacity={0.7}>
+            <Text style={styles.settingsIcon}>⚙</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.tagline}>Your calls, your rules.</Text>
       </View>
 
@@ -121,6 +131,22 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: Spacing.lg,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  settingsButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 22,
+    color: Colors.textMuted,
   },
   appName: {
     fontFamily: FontFamily.displayBold,
