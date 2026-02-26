@@ -1,13 +1,10 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'expo-module'
-
-group = 'expo.modules.callscreener'
-version = '0.1.0'
+plugins {
+    id 'com.android.library'
+    id 'expo-module-gradle-plugin'
+}
 
 android {
     namespace "expo.modules.callscreener"
-    compileSdkVersion safeExtGet("compileSdkVersion", 35)
 
     defaultConfig {
         minSdkVersion safeExtGet("minSdkVersion", 24)
@@ -22,10 +19,6 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-}
-
-dependencies {
-    implementation project(':expo-modules-core')
 }
 
 def safeExtGet(prop, fallback) {
