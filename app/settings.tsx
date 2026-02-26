@@ -7,9 +7,9 @@ import { FontFamily } from '@/constants/fonts';
 
 let CallScreener: any = null;
 try {
-  CallScreener = require('@/modules/call-screener');
-} catch (e) {
-  // Native module not available
+  CallScreener = require('../modules/call-screener');
+} catch (e: any) {
+  console.warn('CallScreener native module not available:', e?.message);
 }
 
 export default function SettingsScreen() {

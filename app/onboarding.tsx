@@ -9,9 +9,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Conditionally import native module (only available in dev builds, not Expo Go)
 let CallScreener: any = null;
 try {
-  CallScreener = require('@/modules/call-screener');
-} catch (e) {
-  // Native module not available (e.g., running in Expo Go)
+  CallScreener = require('../modules/call-screener');
+} catch (e: any) {
+  console.warn('CallScreener native module not available:', e?.message);
 }
 
 const ONBOARDING_KEY = 'hangup_onboarding_complete';

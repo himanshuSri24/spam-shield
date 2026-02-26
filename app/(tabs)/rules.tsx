@@ -55,7 +55,7 @@ export default function RulesScreen() {
               isActive={rule.is_active === 1}
               blockedCount={0}
               onToggle={(value) => toggleRule(rule.id, value)}
-              onPress={() => {}}
+              onDelete={() => removeRule(rule.id)}
             />
           ))
         )}
