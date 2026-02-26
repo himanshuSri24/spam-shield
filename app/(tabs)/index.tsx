@@ -6,7 +6,7 @@ import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { StatCard } from '@/components/StatCard';
 import { BlockedCallItem } from '@/components/BlockedCallItem';
-import { useStats, useRecentBlocks, useSeedData } from '@/hooks/useDatabase';
+import { useStats, useRecentBlocks } from '@/hooks/useDatabase';
 
 function formatTimestamp(dateStr: string): string {
   const date = new Date(dateStr);
@@ -27,18 +27,15 @@ function formatTimestamp(dateStr: string): string {
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const seeded = useSeedData();
   const { stats, refresh: refreshStats } = useStats();
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
 
   // Refresh data whenever screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      if (seeded) {
-        refreshStats();
-        refreshRecent();
-      }
-    }, [seeded, refreshStats, refreshRecent])
+      refreshStats();
+      refreshRecent();
+    }, [refreshStats, refreshRecent])
   );
 
   return (

@@ -14,7 +14,6 @@ import {
   getBlockedCalls as dbGetBlockedCalls,
   getRecentBlockedCalls as dbGetRecentBlockedCalls,
   getStats as dbGetStats,
-  seedDemoData,
 } from '@/database/db';
 
 export function useRules() {
@@ -126,16 +125,4 @@ export function useStats() {
   }, [refresh]);
 
   return { stats, loading, refresh };
-}
-
-export function useSeedData() {
-  const [seeded, setSeeded] = useState(false);
-
-  useEffect(() => {
-    seedDemoData()
-      .then(() => setSeeded(true))
-      .catch(console.error);
-  }, []);
-
-  return seeded;
 }

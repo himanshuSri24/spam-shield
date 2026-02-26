@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
+import { clearAllData } from '@/database/db';
 
 let CallScreener: any = null;
 try {
@@ -124,6 +125,30 @@ export default function SettingsScreen() {
             Your blocking rules and call history never leave your phone.
           </Text>
         </View>
+
+        {/* Clear Data */}
+        <Text style={styles.sectionTitle}>DATA</Text>
+        <TouchableOpacity
+          style={styles.dangerButton}
+          onPress={() => {
+            Alert.alert(
+              'Clear All Data',
+              'This will delete all rules and blocked call history. This cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await clearAllData();
+                    Alert.alert('Done', 'All data has been cleared.');
+                  },
+                },
+              ]
+            );
+          }}>
+          <Text style={styles.dangerButtonText}>Clear All Data</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -247,5 +272,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 20,
+  },
+  dangerButton: {
+    backgroundColor: Colors.cardBg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.coralPale,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    marginBottom: Spacing.xxl,
+  },
+  dangerButtonText: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 15,
+    color: Colors.coral,
   },
 });

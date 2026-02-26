@@ -163,47 +163,12 @@ export async function getStats(): Promise<Stats> {
   };
 }
 
-// ==================== SEED DATA (for dev/demo) ====================
+// ==================== DATA MANAGEMENT ====================
 
-export async function seedDemoData(): Promise<void> {
+export async function clearAllData(): Promise<void> {
   const database = await getDB();
-
-  // Check if we already have data
-  const existing = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM rules'
-  );
-  if (existing && existing.count > 0) return;
-
-  // Seed some rules
-  const rules = [
-    { pattern: '140*', label: 'Telemarketers (140)' },
-    { pattern: '1800*', label: 'Toll-free spam' },
-    { pattern: '120*', label: 'Service calls (120)' },
-    { pattern: '160*', label: 'Marketing (160)' },
-  ];
-
-  for (const rule of rules) {
-    await database.runAsync(
-      'INSERT INTO rules (pattern, label) VALUES (?, ?)',
-      [rule.pattern, rule.label]
-    );
-  }
-
-  // Seed some blocked calls
-  const blockedCalls = [
-    { phone: '+91 140-2839-4721', ruleId: 1, minutesAgo: 2 },
-    { phone: '+91 140-9182-6374', ruleId: 1, minutesAgo: 65 },
-    { phone: '+91 1800-123-4567', ruleId: 2, minutesAgo: 180 },
-    { phone: '+91 140-7291-8834', ruleId: 1, minutesAgo: 1440 },
-    { phone: '+91 120-4455-6677', ruleId: 3, minutesAgo: 2880 },
-    { phone: '+91 160-1122-3344', ruleId: 4, minutesAgo: 4320 },
-  ];
-
-  for (const call of blockedCalls) {
-    const blockedAt = new Date(Date.now() - call.minutesAgo * 60 * 1000).toISOString();
-    await database.runAsync(
-      'INSERT INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, ?)',
-      [call.phone, call.ruleId, blockedAt]
-    );
-  }
+  await database.execAsync(`
+    DELETE FROM blocked_calls;
+    DELETE FROM rules;
+  `);
 }
