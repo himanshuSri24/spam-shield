@@ -4,11 +4,15 @@
  */
 
 import * as SQLite from 'expo-sqlite';
+import { syncRules } from '../modules/call-screener';
+
+export type MatchType = 'exact' | 'starts_with' | 'ends_with' | 'contains' | 'regex';
 
 export interface Rule {
   id: number;
   pattern: string;
   label: string;
+  match_type: MatchType;
   is_active: number; // 0 or 1 (SQLite doesn't have boolean)
   created_at: string;
 }
@@ -39,11 +43,13 @@ export async function getDB(): Promise<SQLite.SQLiteDatabase> {
 }
 
 async function initDB(database: SQLite.SQLiteDatabase): Promise<void> {
+  // Create tables
   await database.execAsync(`
     CREATE TABLE IF NOT EXISTS rules (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pattern TEXT NOT NULL,
       label TEXT DEFAULT '',
+      match_type TEXT DEFAULT 'starts_with',
       is_active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT (datetime('now'))
     );
@@ -56,6 +62,71 @@ async function initDB(database: SQLite.SQLiteDatabase): Promise<void> {
       FOREIGN KEY (matched_rule_id) REFERENCES rules(id) ON DELETE SET NULL
     );
   `);
+
+  // Migration: add match_type column if it doesn't exist (for existing installs)
+  try {
+    const tableInfo = await database.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(rules)"
+    );
+    const hasMatchType = tableInfo.some(col => col.name === 'match_type');
+
+    if (!hasMatchType) {
+      await database.execAsync(
+        "ALTER TABLE rules ADD COLUMN match_type TEXT DEFAULT 'starts_with'"
+      );
+
+      // Migrate existing wildcard patterns to proper match types
+      const existingRules = await database.getAllAsync<{ id: number; pattern: string }>(
+        'SELECT id, pattern FROM rules'
+      );
+
+      for (const rule of existingRules) {
+        let newPattern = rule.pattern;
+        let matchType: MatchType = 'exact';
+
+        if (rule.pattern.startsWith('*') && rule.pattern.endsWith('*')) {
+          // *abc* → contains "abc"
+          matchType = 'contains';
+          newPattern = rule.pattern.slice(1, -1);
+        } else if (rule.pattern.endsWith('*')) {
+          // abc* → starts_with "abc"
+          matchType = 'starts_with';
+          newPattern = rule.pattern.slice(0, -1);
+        } else if (rule.pattern.startsWith('*')) {
+          // *abc → ends_with "abc"
+          matchType = 'ends_with';
+          newPattern = rule.pattern.slice(1);
+        }
+
+        await database.runAsync(
+          'UPDATE rules SET pattern = ?, match_type = ? WHERE id = ?',
+          [newPattern, matchType, rule.id]
+        );
+      }
+    }
+  } catch (e: any) {
+    // Column might already exist, that's fine
+    if (e?.message && !e.message.includes('duplicate column name')) {
+      console.warn('Migration check:', e);
+    }
+  }
+}
+
+/**
+ * Sync active rules directly to the Native Kotlin SharedPreferences.
+ * By sending the JSON string across the bridge, we completely bypass
+ * SQLite WAL file flushing/locking problems where Android couldn't read JS's active cache.
+ */
+export async function flushDB(): Promise<void> {
+  const database = await getDB();
+  try {
+    const activeRules = await database.getAllAsync<{id: number, pattern: string, match_type: MatchType}>(
+      'SELECT id, pattern, match_type FROM rules WHERE is_active = 1'
+    );
+    await syncRules(JSON.stringify(activeRules));
+  } catch (e) {
+    console.error('Failed to sync rules to Native bridge:', e);
+  }
 }
 
 // ==================== RULES ====================
@@ -67,19 +138,47 @@ export async function getRules(): Promise<Rule[]> {
   );
 }
 
-export async function addRule(pattern: string, label: string): Promise<Rule> {
+export async function getRuleById(id: number): Promise<Rule | null> {
+  const database = await getDB();
+  return database.getFirstAsync<Rule>(
+    'SELECT * FROM rules WHERE id = ?',
+    [id]
+  );
+}
+
+export async function addRule(
+  pattern: string,
+  label: string,
+  matchType: MatchType = 'starts_with'
+): Promise<Rule> {
   const database = await getDB();
   const result = await database.runAsync(
-    'INSERT INTO rules (pattern, label) VALUES (?, ?)',
-    [pattern, label]
+    'INSERT INTO rules (pattern, label, match_type) VALUES (?, ?, ?)',
+    [pattern, label, matchType]
   );
+  await flushDB();
   return {
     id: result.lastInsertRowId,
     pattern,
     label,
+    match_type: matchType,
     is_active: 1,
     created_at: new Date().toISOString(),
   };
+}
+
+export async function updateRule(
+  id: number,
+  pattern: string,
+  label: string,
+  matchType: MatchType
+): Promise<void> {
+  const database = await getDB();
+  await database.runAsync(
+    'UPDATE rules SET pattern = ?, label = ?, match_type = ? WHERE id = ?',
+    [pattern, label, matchType, id]
+  );
+  await flushDB();
 }
 
 export async function updateRuleActive(id: number, isActive: boolean): Promise<void> {
@@ -88,19 +187,13 @@ export async function updateRuleActive(id: number, isActive: boolean): Promise<v
     'UPDATE rules SET is_active = ? WHERE id = ?',
     [isActive ? 1 : 0, id]
   );
+  await flushDB();
 }
 
 export async function deleteRule(id: number): Promise<void> {
   const database = await getDB();
   await database.runAsync('DELETE FROM rules WHERE id = ?', [id]);
-}
-
-export async function getActiveRulesPatterns(): Promise<string[]> {
-  const database = await getDB();
-  const rules = await database.getAllAsync<{ pattern: string }>(
-    'SELECT pattern FROM rules WHERE is_active = 1'
-  );
-  return rules.map(r => r.pattern);
+  await flushDB();
 }
 
 // ==================== BLOCKED CALLS ====================
@@ -171,4 +264,25 @@ export async function clearAllData(): Promise<void> {
     DELETE FROM blocked_calls;
     DELETE FROM rules;
   `);
+  await flushDB();
+}
+
+// ==================== HELPERS ====================
+
+/** Get a human-readable description for a rule */
+export function getRuleDescription(pattern: string, matchType: MatchType): string {
+  switch (matchType) {
+    case 'exact':
+      return `Blocks calls from ${pattern}`;
+    case 'starts_with':
+      return `Blocks numbers starting with ${pattern}`;
+    case 'ends_with':
+      return `Blocks numbers ending with ${pattern}`;
+    case 'contains':
+      return `Blocks numbers containing ${pattern}`;
+    case 'regex':
+      return `Regex pattern: ${pattern}`;
+    default:
+      return `Pattern: ${pattern}`;
+  }
 }
