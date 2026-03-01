@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -7,6 +7,14 @@ import { FontFamily } from '@/constants/fonts';
 import { StatCard } from '@/components/StatCard';
 import { BlockedCallItem } from '@/components/BlockedCallItem';
 import { useStats, useRecentBlocks } from '@/hooks/useDatabase';
+import { flushDB } from '@/database/db';
+
+let CallScreener: any = null;
+try {
+  CallScreener = require('../../modules/call-screener');
+} catch (e: any) {
+  // Native module not available (e.g. Expo Go)
+}
 
 function formatTimestamp(dateStr: string): string {
   const date = new Date(dateStr);
@@ -29,14 +37,44 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { stats, refresh: refreshStats } = useStats();
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
+  const [screeningActive, setScreeningActive] = useState(true);
 
-  // Refresh data whenever screen comes into focus
+  // Refresh data and check screening status whenever screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       refreshStats();
       refreshRecent();
+      // Re-sync rules to SharedPreferences on every focus
+      flushDB().catch(() => {});
+      // Check if call screening role is still held
+      if (CallScreener) {
+        CallScreener.isScreeningEnabled()
+          .then((enabled: boolean) => setScreeningActive(enabled))
+          .catch(() => {});
+      }
     }, [refreshStats, refreshRecent])
   );
+
+  const handleEnableScreening = async () => {
+    if (!CallScreener) return;
+    try {
+      const result = await CallScreener.requestScreeningRole();
+      if (result === 'already_active') {
+        setScreeningActive(true);
+        return;
+      }
+      // Poll briefly for the system dialog result
+      for (let i = 0; i < 3; i++) {
+        await new Promise(r => setTimeout(r, 800));
+        const enabled = await CallScreener.isScreeningEnabled();
+        if (enabled) { setScreeningActive(true); return; }
+      }
+      // System dialog likely didn't appear (MIUI/HyperOS) — open settings directly
+      try { await CallScreener.openScreeningSettings(); } catch {}
+    } catch (e) {
+      try { await CallScreener.openScreeningSettings(); } catch {}
+    }
+  };
 
   return (
     <ScrollView
@@ -58,6 +96,19 @@ export default function DashboardScreen() {
         </View>
         <Text style={styles.tagline}>Your calls, your rules.</Text>
       </View>
+
+      {/* Screening disabled warning */}
+      {!screeningActive && (
+        <TouchableOpacity
+          style={styles.warningBanner}
+          onPress={handleEnableScreening}
+          activeOpacity={0.8}>
+          <Text style={styles.warningText}>
+            ⚠ Call screening is disabled — calls won't be blocked.
+          </Text>
+          <Text style={styles.warningAction}>Tap to enable</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Decorative divider */}
       <View style={styles.dividerContainer}>
@@ -207,5 +258,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
+  },
+  warningBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    alignItems: 'center',
+  },
+  warningText: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 13,
+    color: '#92400E',
+    textAlign: 'center',
+  },
+  warningAction: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 13,
+    color: '#D97706',
+    marginTop: Spacing.xs,
   },
 });

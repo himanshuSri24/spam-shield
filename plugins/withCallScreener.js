@@ -13,29 +13,35 @@ const withCallScreener = (config) => {
       (s) => s.$?.['android:name'] === 'expo.modules.callscreener.HangUpCallScreeningService'
     );
 
-    if (!existingService) {
-      if (!mainApplication.service) {
-        mainApplication.service = [];
-      }
-
-      mainApplication.service.push({
-        $: {
-          'android:name': 'expo.modules.callscreener.HangUpCallScreeningService',
-          'android:permission': 'android.permission.BIND_SCREENING_SERVICE',
-          'android:exported': 'true',
-        },
-        'intent-filter': [
-          {
-            action: [
-              {
-                $: {
-                  'android:name': 'android.telecom.CallScreeningService',
-                },
+    const serviceEntry = {
+      $: {
+        'android:name': 'expo.modules.callscreener.HangUpCallScreeningService',
+        'android:permission': 'android.permission.BIND_SCREENING_SERVICE',
+        'android:exported': 'true',
+      },
+      'intent-filter': [
+        {
+          action: [
+            {
+              $: {
+                'android:name': 'android.telecom.CallScreeningService',
               },
-            ],
-          },
-        ],
-      });
+            },
+          ],
+        },
+      ],
+    };
+
+    if (!mainApplication.service) {
+      mainApplication.service = [];
+    }
+
+    if (existingService) {
+      // Update existing entry to ensure correct permission
+      const idx = mainApplication.service.indexOf(existingService);
+      mainApplication.service[idx] = serviceEntry;
+    } else {
+      mainApplication.service.push(serviceEntry);
     }
 
     return config;

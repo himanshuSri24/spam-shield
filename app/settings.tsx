@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -13,11 +13,45 @@ try {
   console.warn('CallScreener native module not available:', e?.message);
 }
 
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+const FAQ_ITEMS: FAQItem[] = [
+  {
+    question: 'How does call blocking work?',
+    answer: 'When a call comes in, Android passes it through Hang Up before your phone rings. Hang Up checks the number against your rules and silently rejects matching calls — they never ring.',
+  },
+  {
+    question: 'Why do I need to set Hang Up as default?',
+    answer: 'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure — only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
+  },
+  {
+    question: 'What are match types?',
+    answer: '"Exact" blocks a specific number. "Starts with" blocks numbers beginning with certain digits. "Ends with" blocks numbers ending with certain digits. "Contains" blocks numbers with certain digits anywhere. "Regex" is for advanced pattern matching.',
+  },
+  {
+    question: 'How do I block international spam?',
+    answer: 'Use "Starts with" and include the country code. For example, to block Indian telemarketers starting with 140, use "+91140" as "Starts with". To block all calls from a country code, use that code as "Starts with" (e.g., "+234" for Nigeria).',
+  },
+  {
+    question: 'Will this block legitimate calls?',
+    answer: 'Only calls matching your rules will be blocked. Be careful with broad patterns. You can always check blocked calls in the History tab and adjust your rules.',
+  },
+  {
+    question: 'Does Hang Up use the internet?',
+    answer: 'No. Hang Up works 100% offline on your device. No data is ever sent anywhere. Your rules and call history stay on your phone.',
+  },
+];
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [screeningEnabled, setScreeningEnabled] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<string>('checking...');
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
   useEffect(() => {
     checkStatus();
@@ -39,6 +73,27 @@ export default function SettingsScreen() {
     }
   };
 
+  // Poll for status changes after requesting the role
+  const pollForStatusChange = async (maxAttempts: number = 10, delayMs: number = 1000) => {
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      try {
+        const enabled = await CallScreener.isScreeningEnabled();
+        if (enabled) {
+          setScreeningEnabled(true);
+          const status = await CallScreener.getServiceStatus();
+          setServiceStatus(status);
+          return true;
+        }
+      } catch (e) {
+        // Continue polling
+      }
+    }
+    // Final check
+    await checkStatus();
+    return false;
+  };
+
   const handleToggleScreening = async () => {
     if (!CallScreener) {
       Alert.alert('Dev Build Required', 'Call screening requires a native development build.');
@@ -47,18 +102,38 @@ export default function SettingsScreen() {
 
     if (!screeningEnabled) {
       try {
-        await CallScreener.requestScreeningRole();
-        await checkStatus();
+        setIsRequesting(true);
+        const result = await CallScreener.requestScreeningRole();
+
+        if (result === 'already_active') {
+          setScreeningEnabled(true);
+          setServiceStatus('active');
+        } else if (result === 'requested') {
+          const success = await pollForStatusChange(3, 800);
+          if (!success) {
+            // System dialog didn't appear — open settings directly
+            try { await CallScreener.openScreeningSettings(); } catch {}
+          }
+        } else {
+          try { await CallScreener.openScreeningSettings(); } catch {}
+        }
       } catch (e) {
         console.error('Failed to request role:', e);
+        try { await CallScreener.openScreeningSettings(); } catch {}
+      } finally {
+        setIsRequesting(false);
       }
     } else {
       Alert.alert(
         'Disable Screening',
-        'To disable, go to your phone\'s Settings → Phone → Caller ID & Spam and choose a different app.',
+        'To disable, go to your phone\'s Settings → Default apps → Caller ID & Spam and choose a different app.',
         [{ text: 'OK' }]
       );
     }
+  };
+
+  const toggleFAQ = (index: number) => {
+    setExpandedFAQ(expandedFAQ === index ? null : index);
   };
 
   return (
@@ -86,16 +161,47 @@ export default function SettingsScreen() {
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Call Screening Active</Text>
               <Text style={styles.settingDescription}>
-                Status: {serviceStatus}
+                Status: {serviceStatus === 'active' ? '🟢 Active' : serviceStatus === 'inactive' ? '🔴 Inactive' : serviceStatus}
               </Text>
             </View>
-            <Switch
-              value={screeningEnabled}
-              onValueChange={handleToggleScreening}
-              trackColor={{ false: Colors.borderDark, true: Colors.coralPale }}
-              thumbColor={screeningEnabled ? Colors.coral : Colors.textLight}
-            />
+            {isRequesting ? (
+              <ActivityIndicator color={Colors.coral} />
+            ) : (
+              <Switch
+                value={screeningEnabled}
+                onValueChange={handleToggleScreening}
+                trackColor={{ false: Colors.borderDark, true: Colors.coralPale }}
+                thumbColor={screeningEnabled ? Colors.coral : Colors.textLight}
+              />
+            )}
           </View>
+          {!screeningEnabled && serviceStatus !== 'Requires dev build' && (
+            <Text style={styles.enableHint}>
+              Enable to start blocking unwanted calls
+            </Text>
+          )}
+        </View>
+
+        {/* Help & FAQ Section */}
+        <Text style={styles.sectionTitle}>HELP & FAQ</Text>
+        <View style={styles.card}>
+          {FAQ_ITEMS.map((item, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && <View style={styles.divider} />}
+              <TouchableOpacity
+                style={styles.faqRow}
+                onPress={() => toggleFAQ(index)}
+                activeOpacity={0.7}>
+                <Text style={styles.faqQuestion}>{item.question}</Text>
+                <Text style={styles.faqArrow}>
+                  {expandedFAQ === index ? '▲' : '▼'}
+                </Text>
+              </TouchableOpacity>
+              {expandedFAQ === index && (
+                <Text style={styles.faqAnswer}>{item.answer}</Text>
+              )}
+            </React.Fragment>
+          ))}
         </View>
 
         {/* About Section */}
@@ -149,6 +255,8 @@ export default function SettingsScreen() {
           }}>
           <Text style={styles.dangerButtonText}>Clear All Data</Text>
         </TouchableOpacity>
+
+        
       </ScrollView>
     </View>
   );
@@ -232,6 +340,40 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
   },
+  enableHint: {
+    fontFamily: FontFamily.bodyRegular,
+    fontSize: 12,
+    color: Colors.coral,
+    marginTop: Spacing.sm,
+    fontStyle: 'italic',
+  },
+  // FAQ
+  faqRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  faqQuestion: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  faqArrow: {
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  faqAnswer: {
+    fontFamily: FontFamily.bodyRegular,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    paddingBottom: Spacing.sm,
+    paddingLeft: Spacing.xs,
+  },
+  // About
   aboutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

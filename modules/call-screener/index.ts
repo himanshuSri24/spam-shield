@@ -21,3 +21,25 @@ export function isScreeningEnabled(): Promise<boolean> {
 export function getServiceStatus(): Promise<string> {
   return CallScreenerModule.getServiceStatus();
 }
+
+/**
+ * Sync active SQLite rules to Native SharedPreferences JSON layer.
+ * This completely circumvents sqlite WAL flush contention across bridge.
+ */
+export function syncRules(rulesJson: string): Promise<boolean> {
+  return CallScreenerModule.syncRules(rulesJson);
+}
+
+/**
+ * Open system Default Apps settings so user can manually select call screening app.
+ */
+export function openScreeningSettings(): Promise<boolean> {
+  return CallScreenerModule.openScreeningSettings();
+}
+
+/**
+ * Developer test method to verify match logic without a real call.
+ */
+export function testMatch(phoneNumber: string): Promise<any> {
+  return CallScreenerModule.testMatch(phoneNumber);
+}
