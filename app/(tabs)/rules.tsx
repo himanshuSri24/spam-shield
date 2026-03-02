@@ -1,5 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -23,52 +25,64 @@ export default function RulesScreen() {
   const activeCount = rules.filter(r => r.is_active === 1).length;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Block Rules</Text>
-        <Text style={styles.subtitle}>
-          {activeCount} active rule{activeCount !== 1 ? 's' : ''}
-        </Text>
-      </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Block Rules</Text>
+          <Text style={styles.subtitle}>
+            {activeCount} active rule{activeCount !== 1 ? 's' : ''} · Swipe to delete · Tap to edit
+          </Text>
+        </View>
 
-      {/* Decorative accent bar */}
-      <View style={styles.accentBar} />
+        {/* Decorative accent bar */}
+        <View style={styles.accentBar} />
 
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}>
 
-        {rules.length === 0 ? (
-          <EmptyState
-            icon="🛡️"
-            title="No rules yet"
-            message="Add your first blocking rule to start filtering unwanted calls."
-          />
-        ) : (
-          rules.map(rule => (
-            <RuleCard
-              key={rule.id}
-              pattern={rule.pattern}
-              label={rule.label}
-              isActive={rule.is_active === 1}
-              blockedCount={0}
-              onToggle={(value) => toggleRule(rule.id, value)}
-              onDelete={() => removeRule(rule.id)}
+          {rules.length === 0 ? (
+            <EmptyState
+              icon="🛡️"
+              title="No rules yet"
+              message="Add your first blocking rule to start filtering unwanted calls."
             />
-          ))
-        )}
-      </ScrollView>
+          ) : (
+            rules.map((rule, index) => (
+              <Animated.View
+                key={rule.id}
+                entering={FadeInDown.duration(300).delay(index * 60)}
+                exiting={FadeOutUp.duration(250)}
+                layout={LinearTransition.springify().damping(16)}>
+                <RuleCard
+                  id={rule.id}
+                  pattern={rule.pattern}
+                  label={rule.label}
+                  matchType={rule.match_type}
+                  isActive={rule.is_active === 1}
+                  blockedCount={0}
+                  onToggle={(value) => toggleRule(rule.id, value)}
+                  onDelete={() => removeRule(rule.id)}
+                  onEdit={() => router.push(`/add-rule?ruleId=${rule.id}`)}
+                />
+              </Animated.View>
+            ))
+          )}
+        </ScrollView>
 
-      {/* FAB — Add Rule */}
-      <TouchableOpacity
-        style={[styles.fab, { bottom: insets.bottom + 20 }]}
-        activeOpacity={0.8}
-        onPress={() => router.push('/add-rule')}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-    </View>
+        {/* FAB — Add Rule */}
+        <Animated.View entering={FadeInDown.duration(400).delay(300)} style={[styles.fab, { bottom: insets.bottom + 20 }]}>
+          <TouchableOpacity
+            style={styles.fabInner}
+            activeOpacity={0.8}
+            onPress={() => router.push('/add-rule')}>
+            <Text style={styles.fabIcon}>+</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -111,6 +125,8 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: Spacing.xl,
+  },
+  fabInner: {
     width: 56,
     height: 56,
     borderRadius: BorderRadius.round,

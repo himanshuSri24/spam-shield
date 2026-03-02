@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Platform, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -21,6 +22,29 @@ export async function isOnboardingComplete(): Promise<boolean> {
   return value === 'true';
 }
 
+const STEPS = [
+  {
+    icon: '📵',
+    title: 'Welcome to\nHang Up',
+    body: 'Take back control of your phone.\nBlock spam calls before they even ring.',
+  },
+  {
+    icon: '🛡️',
+    title: 'Enable Call\nScreening',
+    body: 'To silently block calls, Hang Up needs to be set as your default call screening app.\n\nNo data ever leaves your device.',
+  },
+  {
+    icon: '📋',
+    title: 'How It\nWorks',
+    body: '1. Add blocking rules with match types\n2. "Starts with" blocks numbers beginning with certain digits\n3. "Exact" blocks a specific number\n4. Calls matching your rules are silently rejected\n\nTip: Include the country code (like +91) for precise matching.',
+  },
+  {
+    icon: '✨',
+    title: "You're All\nSet",
+    body: '', // Dynamic — set in the component
+  },
+];
+
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -38,10 +62,27 @@ export default function OnboardingScreen() {
     }
 
     try {
-      await CallScreener.requestScreeningRole();
-      // Check if it was granted
-      const enabled = await CallScreener.isScreeningEnabled();
-      setScreeningEnabled(enabled);
+      const result = await CallScreener.requestScreeningRole();
+
+      if (result === 'already_active') {
+        setScreeningEnabled(true);
+        setStep(2);
+        return;
+      }
+
+      // Poll for the result after the system dialog
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+          const enabled = await CallScreener.isScreeningEnabled();
+          if (enabled) {
+            setScreeningEnabled(enabled);
+            break;
+          }
+        } catch (e) {
+          // Continue polling
+        }
+      }
       setStep(2);
     } catch (error) {
       console.error('Failed to request screening role:', error);
@@ -54,42 +95,31 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)');
   };
 
-  const steps = [
-    // Step 0: Welcome
-    {
-      icon: '📵',
-      title: 'Welcome to\nHang Up',
-      body: 'Take back control of your phone.\nBlock spam calls before they even ring.',
-      buttonText: 'Get Started',
-      onPress: () => setStep(1),
-    },
-    // Step 1: Permission
-    {
-      icon: '🛡️',
-      title: 'Enable Call\nScreening',
-      body: 'To silently block calls, Hang Up needs to be set as your default call screening app.\n\nNo data ever leaves your device.',
-      buttonText: 'Enable Screening',
-      onPress: handleRequestRole,
-    },
-    // Step 2: Done
-    {
-      icon: '✨',
-      title: 'You\'re All\nSet',
-      body: screeningEnabled
-        ? 'Call screening is active! Add blocking rules and spam calls will be silently rejected.'
-        : 'You can enable call screening later in Settings. Start by adding your first blocking rule.',
-      buttonText: 'Start Blocking',
-      onPress: handleFinish,
-    },
+  const currentStep = step;
+  const totalSteps = STEPS.length;
+  const stepData = STEPS[currentStep];
+
+  // Dynamic body for final step
+  const finalBody = screeningEnabled
+    ? 'Call screening is active! Add blocking rules and spam calls will be silently rejected.'
+    : 'You can enable call screening later in Settings.\nStart by adding your first blocking rule.';
+
+  const displayBody = currentStep === totalSteps - 1 ? finalBody : stepData.body;
+
+  const buttonConfig = [
+    { text: 'Get Started', action: () => setStep(1) },
+    { text: 'Enable Screening', action: handleRequestRole },
+    { text: 'Next', action: () => setStep(3) },
+    { text: 'Start Blocking', action: handleFinish },
   ];
 
-  const currentStep = steps[step];
+  const currentButton = buttonConfig[currentStep];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Step indicator */}
       <View style={styles.stepIndicator}>
-        {steps.map((_, i) => (
+        {STEPS.map((_, i) => (
           <View
             key={i}
             style={[styles.dot, i === step && styles.dotActive, i < step && styles.dotCompleted]}
@@ -98,19 +128,19 @@ export default function OnboardingScreen() {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.icon}>{currentStep.icon}</Text>
-        <Text style={styles.title}>{currentStep.title}</Text>
-        <Text style={styles.body}>{currentStep.body}</Text>
-      </View>
+      <Animated.View key={step} entering={FadeInDown.duration(400)} style={styles.content}>
+        <Text style={styles.icon}>{stepData.icon}</Text>
+        <Text style={styles.title}>{stepData.title}</Text>
+        <Text style={styles.body}>{displayBody}</Text>
+      </Animated.View>
 
       {/* Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.button}
-          onPress={currentStep.onPress}
+          onPress={currentButton.action}
           activeOpacity={0.8}>
-          <Text style={styles.buttonText}>{currentStep.buttonText}</Text>
+          <Text style={styles.buttonText}>{currentButton.text}</Text>
         </TouchableOpacity>
 
         {step === 1 && (
@@ -118,6 +148,14 @@ export default function OnboardingScreen() {
             style={styles.skipButton}
             onPress={() => setStep(2)}>
             <Text style={styles.skipText}>Skip for now</Text>
+          </TouchableOpacity>
+        )}
+
+        {step === 2 && (
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={() => setStep(3)}>
+            <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
         )}
       </View>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -83,7 +84,7 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={false}>
 
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ width: 36 }} />
           <Text style={styles.appName}>Hang Up</Text>
@@ -95,19 +96,21 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
         <Text style={styles.tagline}>Your calls, your rules.</Text>
-      </View>
+      </Animated.View>
 
       {/* Screening disabled warning */}
       {!screeningActive && (
-        <TouchableOpacity
-          style={styles.warningBanner}
-          onPress={handleEnableScreening}
-          activeOpacity={0.8}>
-          <Text style={styles.warningText}>
-            ⚠ Call screening is disabled — calls won't be blocked.
-          </Text>
-          <Text style={styles.warningAction}>Tap to enable</Text>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+          <TouchableOpacity
+            style={styles.warningBanner}
+            onPress={handleEnableScreening}
+            activeOpacity={0.8}>
+            <Text style={styles.warningText}>
+              ⚠ Call screening is disabled — calls won't be blocked.
+            </Text>
+            <Text style={styles.warningAction}>Tap to enable</Text>
+          </TouchableOpacity>
+        </Animated.View>
       )}
 
       {/* Decorative divider */}
@@ -125,6 +128,7 @@ export default function DashboardScreen() {
             label="Calls Blocked"
             sublabel="All time"
             accent
+            delay={200}
           />
         </View>
         <View style={styles.statRow}>
@@ -132,12 +136,14 @@ export default function DashboardScreen() {
             <StatCard
               value={stats.blockedToday}
               label="Today"
+              delay={350}
             />
           </View>
           <View style={styles.statHalf}>
             <StatCard
               value={stats.activeRules}
               label="Active Rules"
+              delay={500}
             />
           </View>
         </View>
@@ -145,7 +151,7 @@ export default function DashboardScreen() {
 
       {/* Recent Blocks */}
       {recentBlocks.length > 0 && (
-        <View style={styles.section}>
+        <Animated.View entering={FadeInDown.duration(400).delay(600)} style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Blocks</Text>
           </View>
@@ -159,7 +165,7 @@ export default function DashboardScreen() {
               />
             ))}
           </View>
-        </View>
+        </Animated.View>
       )}
 
       {/* Bottom padding */}

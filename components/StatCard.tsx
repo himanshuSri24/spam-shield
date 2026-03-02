@@ -1,5 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  FadeIn,
+  Easing,
+} from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 
@@ -8,11 +16,28 @@ interface StatCardProps {
   label: string;
   sublabel?: string;
   accent?: boolean;
+  delay?: number;
 }
 
-export function StatCard({ value, label, sublabel, accent = false }: StatCardProps) {
+export function StatCard({ value, label, sublabel, accent = false, delay = 0 }: StatCardProps) {
+  const scale = useSharedValue(0.92);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scale.value = withSpring(1, { damping: 14, stiffness: 100 });
+      opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) });
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
   return (
-    <View style={[styles.card, accent && styles.cardAccent]}>
+    <Animated.View style={[styles.card, accent && styles.cardAccent, animatedStyle]}>
       <Text style={[styles.value, accent && styles.valueAccent]}>
         {value.toLocaleString()}
       </Text>
@@ -22,7 +47,7 @@ export function StatCard({ value, label, sublabel, accent = false }: StatCardPro
           {sublabel}
         </Text>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
