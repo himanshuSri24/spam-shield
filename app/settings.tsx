@@ -28,6 +28,10 @@ const FAQ_ITEMS: FAQItem[] = [
     answer: 'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure — only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
   },
   {
+    question: 'Does it block saved contacts?',
+    answer: 'Android does not pass calls from your saved contacts through the call screening service. This means Hang Up cannot block numbers in your contacts — it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.',
+  },
+  {
     question: 'What are match types?',
     answer: '"Exact" blocks a specific number. "Starts with" blocks numbers beginning with certain digits. "Ends with" blocks numbers ending with certain digits. "Contains" blocks numbers with certain digits anywhere. "Regex" is for advanced pattern matching.',
   },
