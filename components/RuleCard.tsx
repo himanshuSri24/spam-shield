@@ -1,59 +1,133 @@
-import React from 'react';
-import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
+import { MatchType, getRuleDescription } from '@/database/db';
 
 interface RuleCardProps {
+  id: number;
   pattern: string;
   label: string;
+  matchType: MatchType;
   isActive: boolean;
   blockedCount: number;
   onToggle: (value: boolean) => void;
   onDelete: () => void;
+  onEdit: () => void;
 }
 
-export function RuleCard({ pattern, label, isActive, blockedCount, onToggle, onDelete }: RuleCardProps) {
-  const handleLongPress = () => {
-    Alert.alert(
-      'Delete Rule',
-      `Remove the blocking rule "${pattern}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onDelete },
-      ]
+const MATCH_TYPE_ICONS: Record<MatchType, string> = {
+  exact: '🎯',
+  starts_with: '▶️',
+  ends_with: '◀️',
+  contains: '🔍',
+  regex: '⚙️',
+};
+
+const MATCH_TYPE_LABELS: Record<MatchType, string> = {
+  exact: 'Exact',
+  starts_with: 'Starts with',
+  ends_with: 'Ends with',
+  contains: 'Contains',
+  regex: 'Regex',
+};
+
+export function RuleCard({
+  id,
+  pattern,
+  label,
+  matchType,
+  isActive,
+  blockedCount,
+  onToggle,
+  onDelete,
+  onEdit,
+}: RuleCardProps) {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const handleDelete = () => {
+    swipeableRef.current?.close();
+    onDelete();
+  };
+
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const translateX = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [0, 80],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.deleteAction,
+          { transform: [{ translateX }], opacity },
+        ]}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDelete}
+          activeOpacity={0.8}>
+          <Text style={styles.deleteIcon}>🗑️</Text>
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.card, !isActive && styles.cardInactive]}
-      onLongPress={handleLongPress}
-      delayLongPress={500}
-      activeOpacity={0.7}>
-      <View style={styles.left}>
-        <View style={styles.topRow}>
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={40}
+      overshootRight={false}
+      friction={2}>
+      <TouchableOpacity
+        style={[styles.card, !isActive && styles.cardInactive]}
+        onPress={onEdit}
+        activeOpacity={0.7}>
+        <View style={styles.left}>
+          <View style={styles.topRow}>
+            <View style={styles.matchInfo}>
+              <Text style={styles.matchIcon}>
+                {MATCH_TYPE_ICONS[matchType] ?? '📝'}
+              </Text>
+              <View style={[styles.matchTypeBadge, !isActive && styles.matchTypeBadgeInactive]}>
+                <Text style={[styles.matchTypeText, !isActive && styles.matchTypeTextInactive]}>
+                  {MATCH_TYPE_LABELS[matchType] ?? matchType}
+                </Text>
+              </View>
+            </View>
+          </View>
           <View style={[styles.patternBadge, !isActive && styles.patternBadgeInactive]}>
             <Text style={[styles.patternText, !isActive && styles.patternTextInactive]}>
               {pattern}
             </Text>
           </View>
-          <TouchableOpacity onPress={onDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.deleteIcon}>✕</Text>
-          </TouchableOpacity>
+          {label ? (
+            <Text style={[styles.label, !isActive && styles.labelInactive]}>{label}</Text>
+          ) : null}
+          <Text style={styles.blockedCount}>
+            {blockedCount} call{blockedCount !== 1 ? 's' : ''} blocked
+          </Text>
         </View>
-        <Text style={[styles.label, !isActive && styles.labelInactive]}>{label}</Text>
-        <Text style={styles.blockedCount}>
-          {blockedCount} call{blockedCount !== 1 ? 's' : ''} blocked
-        </Text>
-      </View>
-      <Switch
-        value={isActive}
-        onValueChange={onToggle}
-        trackColor={{ false: Colors.borderDark, true: Colors.coralPale }}
-        thumbColor={isActive ? Colors.coral : Colors.textLight}
-        ios_backgroundColor={Colors.borderDark}
-      />
-    </TouchableOpacity>
+        <Switch
+          value={isActive}
+          onValueChange={onToggle}
+          trackColor={{ false: Colors.borderDark, true: Colors.coralPale }}
+          thumbColor={isActive ? Colors.coral : Colors.textLight}
+          ios_backgroundColor={Colors.borderDark}
+        />
+      </TouchableOpacity>
+    </Swipeable>
   );
 }
 
@@ -82,10 +156,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  deleteIcon: {
+  matchInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  matchIcon: {
     fontSize: 14,
+  },
+  matchTypeBadge: {
+    backgroundColor: Colors.sagePale,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  matchTypeBadgeInactive: {
+    backgroundColor: Colors.borderLight,
+  },
+  matchTypeText: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 10,
+    color: Colors.sage,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  matchTypeTextInactive: {
     color: Colors.textMuted,
-    padding: Spacing.xs,
   },
   patternBadge: {
     alignSelf: 'flex-start',
@@ -93,6 +189,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   patternBadgeInactive: {
     backgroundColor: Colors.borderLight,
@@ -119,5 +216,30 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bodyRegular,
     fontSize: 12,
     color: Colors.textMuted,
+  },
+  // Swipe delete action
+  deleteAction: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    marginLeft: -Spacing.sm,
+  },
+  deleteButton: {
+    backgroundColor: Colors.error,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 72,
+  },
+  deleteIcon: {
+    fontSize: 18,
+    marginBottom: 2,
+  },
+  deleteText: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 11,
+    color: Colors.white,
   },
 });

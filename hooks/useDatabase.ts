@@ -7,8 +7,11 @@ import {
   Rule,
   BlockedCall,
   Stats,
+  MatchType,
   getRules,
+  getRuleById as dbGetRuleById,
   addRule as dbAddRule,
+  updateRule as dbUpdateRule,
   updateRuleActive as dbUpdateRuleActive,
   deleteRule as dbDeleteRule,
   getBlockedCalls as dbGetBlockedCalls,
@@ -35,10 +38,28 @@ export function useRules() {
     refresh();
   }, [refresh]);
 
-  const addRule = useCallback(async (pattern: string, label: string) => {
-    const newRule = await dbAddRule(pattern, label);
+  const addRule = useCallback(async (
+    pattern: string,
+    label: string,
+    matchType: MatchType = 'starts_with'
+  ) => {
+    const newRule = await dbAddRule(pattern, label, matchType);
     setRules(prev => [newRule, ...prev]);
     return newRule;
+  }, []);
+
+  const updateRule = useCallback(async (
+    id: number,
+    pattern: string,
+    label: string,
+    matchType: MatchType
+  ) => {
+    await dbUpdateRule(id, pattern, label, matchType);
+    setRules(prev =>
+      prev.map(r =>
+        r.id === id ? { ...r, pattern, label, match_type: matchType } : r
+      )
+    );
   }, []);
 
   const toggleRule = useCallback(async (id: number, isActive: boolean) => {
@@ -53,7 +74,7 @@ export function useRules() {
     setRules(prev => prev.filter(r => r.id !== id));
   }, []);
 
-  return { rules, loading, refresh, addRule, toggleRule, removeRule };
+  return { rules, loading, refresh, addRule, updateRule, toggleRule, removeRule };
 }
 
 export function useBlockedCalls(limit: number = 50) {
@@ -126,3 +147,5 @@ export function useStats() {
 
   return { stats, loading, refresh };
 }
+
+export { dbGetRuleById as getRuleById };
