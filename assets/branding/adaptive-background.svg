@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Android Adaptive Icon Background - Cream with subtle pattern -->
+  <rect width="1024" height="1024" fill="#FFF5EC"/>
+  
+  <!-- Subtle decorative circles for texture -->
+  <circle cx="200" cy="200" r="300" fill="#D4613A" opacity="0.04"/>
+  <circle cx="824" cy="824" r="300" fill="#8B9A7E" opacity="0.04"/>
+  <circle cx="512" cy="512" r="400" fill="#D4613A" opacity="0.03"/>
+</svg>

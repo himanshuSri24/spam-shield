@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Android Adaptive Icon Foreground - The phone + block symbol only -->
+  <!-- Safe zone: inner 66% (170px inset on each side of 1024) -->
+  
+  <!-- Phone handset (hung up / rotated) - Coral accent -->
+  <g transform="translate(512, 440) rotate(135)">
+    <!-- Left earpiece -->
+    <rect x="-180" y="-48" width="96" height="96" rx="24" fill="#D4613A"/>
+    <!-- Right earpiece -->
+    <rect x="84" y="-48" width="96" height="96" rx="24" fill="#D4613A"/>
+    <!-- Handle -->
+    <path d="M-132 48 Q-132 120 -66 144 L66 144 Q132 120 132 48" 
+          stroke="#D4613A" stroke-width="32" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Block circle with X -->
+  <g transform="translate(512, 440)">
+    <circle cx="0" cy="0" r="72" fill="#C14A2B"/>
+    <line x1="-26" y1="-26" x2="26" y2="26" stroke="#FFF5EC" stroke-width="12" stroke-linecap="round"/>
+    <line x1="26" y1="-26" x2="-26" y2="26" stroke="#FFF5EC" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <!-- "HU" monogram below -->
+  <text x="512" y="720" text-anchor="middle" font-family="serif" font-weight="700" font-size="140" fill="#1A1A1A" letter-spacing="8">
+    HU
+  </text>
+</svg>

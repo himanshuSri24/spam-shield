@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Play Store Feature Graphic Background (1024x500 scaled) -->
+  <!-- Full branding banner -->
+  <rect width="1024" height="1024" fill="#FFF5EC"/>
+  
+  <!-- Large decorative elements -->
+  <circle cx="100" cy="100" r="400" fill="#D4613A" opacity="0.06"/>
+  <circle cx="924" cy="924" r="400" fill="#8B9A7E" opacity="0.06"/>
+  
+  <!-- Central phone icon -->
+  <g transform="translate(512, 380) rotate(135)">
+    <rect x="-140" y="-36" width="72" height="72" rx="18" fill="#D4613A"/>
+    <rect x="68" y="-36" width="72" height="72" rx="18" fill="#D4613A"/>
+    <path d="M-104 36 Q-104 90 -52 108 L52 108 Q104 90 104 36" 
+          stroke="#D4613A" stroke-width="24" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Block circle -->
+  <g transform="translate(512, 380)">
+    <circle cx="0" cy="0" r="52" fill="#C14A2B"/>
+    <line x1="-18" y1="-18" x2="18" y2="18" stroke="#FFF5EC" stroke-width="8" stroke-linecap="round"/>
+    <line x1="18" y1="-18" x2="-18" y2="18" stroke="#FFF5EC" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- App name -->
+  <text x="512" y="620" text-anchor="middle" font-family="serif" font-weight="700" font-size="120" fill="#1A1A1A" letter-spacing="6">
+    HANG UP
+  </text>
+  
+  <!-- Tagline -->
+  <text x="512" y="700" text-anchor="middle" font-family="sans-serif" font-weight="400" font-size="44" fill="#8B9A7E" letter-spacing="8">
+    BLOCK UNWANTED CALLS
+  </text>
+
+  <!-- Decorative bottom dots -->
+  <circle cx="452" cy="780" r="6" fill="#D4613A" opacity="0.4"/>
+  <circle cx="482" cy="780" r="6" fill="#D4613A" opacity="0.6"/>
+  <circle cx="512" cy="780" r="6" fill="#D4613A" opacity="0.8"/>
+  <circle cx="542" cy="780" r="6" fill="#D4613A" opacity="0.6"/>
+  <circle cx="572" cy="780" r="6" fill="#D4613A" opacity="0.4"/>
+</svg>
