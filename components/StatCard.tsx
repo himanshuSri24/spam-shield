@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
-  FadeIn,
   Easing,
 } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -17,19 +16,24 @@ interface StatCardProps {
   sublabel?: string;
   accent?: boolean;
   delay?: number;
+  /** Change this value to re-trigger the entrance animation */
+  animKey?: number;
 }
 
-export function StatCard({ value, label, sublabel, accent = false, delay = 0 }: StatCardProps) {
+export function StatCard({ value, label, sublabel, accent = false, delay = 0, animKey = 0 }: StatCardProps) {
   const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
+    // Reset to starting state then animate in
+    scale.value = 0.92;
+    opacity.value = 0;
     const timer = setTimeout(() => {
       scale.value = withSpring(1, { damping: 14, stiffness: 100 });
       opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) });
     }, delay);
     return () => clearTimeout(timer);
-  }, [delay]);
+  }, [delay, animKey]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

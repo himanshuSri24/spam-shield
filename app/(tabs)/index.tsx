@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -39,10 +45,37 @@ export default function DashboardScreen() {
   const { stats, refresh: refreshStats } = useStats();
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
   const [screeningActive, setScreeningActive] = useState(true);
+  const animKey = useRef(0);
+
+  // Focus-driven fade/slide animations
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateY = useSharedValue(18);
+  const recentOpacity = useSharedValue(0);
+  const recentTranslateY = useSharedValue(18);
+
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerTranslateY.value }],
+  }));
+  const recentStyle = useAnimatedStyle(() => ({
+    opacity: recentOpacity.value,
+    transform: [{ translateY: recentTranslateY.value }],
+  }));
 
   // Refresh data and check screening status whenever screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
+      // Trigger animations
+      animKey.current += 1;
+      headerOpacity.value = 0;
+      headerTranslateY.value = 18;
+      recentOpacity.value = 0;
+      recentTranslateY.value = 18;
+      headerOpacity.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) });
+      headerTranslateY.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) });
+      recentOpacity.value = withDelay(500, withTiming(1, { duration: 400 }));
+      recentTranslateY.value = withDelay(500, withTiming(0, { duration: 400 }));
+
       // Drain any blocked calls queued by the native screening service
       drainPendingBlockedCalls().then((count) => {
         if (count > 0) {
@@ -91,7 +124,7 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={false}>
 
       {/* Header */}
-      <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
+      <Animated.View style={[styles.header, headerStyle]}>
         <View style={styles.headerTop}>
           <View style={{ width: 36 }} />
           <Text style={styles.appName}>Hang Up</Text>
@@ -107,7 +140,7 @@ export default function DashboardScreen() {
 
       {/* Screening disabled warning */}
       {!screeningActive && (
-        <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+        <Animated.View style={headerStyle}>
           <TouchableOpacity
             style={styles.warningBanner}
             onPress={handleEnableScreening}
@@ -136,6 +169,7 @@ export default function DashboardScreen() {
             sublabel="All time"
             accent
             delay={200}
+            animKey={animKey.current}
           />
         </View>
         <View style={styles.statRow}>
@@ -144,6 +178,7 @@ export default function DashboardScreen() {
               value={stats.blockedToday}
               label="Today"
               delay={350}
+              animKey={animKey.current}
             />
           </View>
           <View style={styles.statHalf}>
@@ -151,6 +186,7 @@ export default function DashboardScreen() {
               value={stats.activeRules}
               label="Active Rules"
               delay={500}
+              animKey={animKey.current}
             />
           </View>
         </View>
@@ -158,7 +194,7 @@ export default function DashboardScreen() {
 
       {/* Recent Blocks */}
       {recentBlocks.length > 0 && (
-        <Animated.View entering={FadeInDown.duration(400).delay(600)} style={styles.section}>
+        <Animated.View style={[styles.section, recentStyle]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Blocks</Text>
           </View>

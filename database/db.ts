@@ -255,6 +255,18 @@ export async function getRecentBlockedCalls(limit: number = 5): Promise<BlockedC
   return getBlockedCalls(limit);
 }
 
+export async function getBlockedCountsByRule(): Promise<Record<number, number>> {
+  const database = await getDB();
+  const rows = await database.getAllAsync<{ matched_rule_id: number; count: number }>(
+    'SELECT matched_rule_id, COUNT(*) as count FROM blocked_calls WHERE matched_rule_id IS NOT NULL GROUP BY matched_rule_id'
+  );
+  const map: Record<number, number> = {};
+  for (const row of rows) {
+    map[row.matched_rule_id] = row.count;
+  }
+  return map;
+}
+
 // ==================== STATS ====================
 
 export async function getStats(): Promise<Stats> {

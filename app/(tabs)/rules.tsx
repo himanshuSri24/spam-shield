@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeOutUp, LinearTransition, useSharedValue, useAnimatedStyle, withTiming, withDelay, Easing } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -8,18 +8,66 @@ import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { RuleCard } from '@/components/RuleCard';
 import { EmptyState } from '@/components/EmptyState';
-import { useRules } from '@/hooks/useDatabase';
+import { useRules, useRuleBlockedCounts } from '@/hooks/useDatabase';
+import { drainPendingBlockedCalls } from '@/database/db';
+
+/** Wrapper that re-triggers a staggered fade-in on every focus */
+function RuleCardAnimated({ children, index, focusCount }: { children: React.ReactNode; index: number; focusCount: number }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(14);
+
+  React.useEffect(() => {
+    opacity.value = 0;
+    translateY.value = 14;
+    opacity.value = withDelay(index * 50, withTiming(1, { duration: 280, easing: Easing.out(Easing.quad) }));
+    translateY.value = withDelay(index * 50, withTiming(0, { duration: 320, easing: Easing.out(Easing.quad) }));
+  }, [focusCount]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View
+      exiting={FadeOutUp.duration(250)}
+      layout={LinearTransition.springify().damping(16)}
+      style={animStyle}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function RulesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { rules, refresh, toggleRule, removeRule } = useRules();
+  const { counts: blockedCounts, refresh: refreshCounts } = useRuleBlockedCounts();
+  const [focusCount, setFocusCount] = React.useState(0);
+
+  // Focus-driven FAB animation
+  const fabOpacity = useSharedValue(0);
+  const fabScale = useSharedValue(0.7);
+  const fabStyle = useAnimatedStyle(() => ({
+    opacity: fabOpacity.value,
+    transform: [{ scale: fabScale.value }],
+  }));
 
   // Refresh when screen comes into focus (e.g., after adding a new rule)
   useFocusEffect(
     React.useCallback(() => {
+      setFocusCount(c => c + 1);
+      fabOpacity.value = 0;
+      fabScale.value = 0.7;
+      fabOpacity.value = withDelay(200, withTiming(1, { duration: 300 }));
+      fabScale.value = withDelay(200, withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.5)) }));
+
+      drainPendingBlockedCalls().then((count) => {
+        if (count > 0) refreshCounts();
+      }).catch(() => {});
       refresh();
-    }, [refresh])
+      refreshCounts();
+    }, [refresh, refreshCounts])
   );
 
   const activeCount = rules.filter(r => r.is_active === 1).length;
@@ -51,29 +99,28 @@ export default function RulesScreen() {
             />
           ) : (
             rules.map((rule, index) => (
-              <Animated.View
+              <RuleCardAnimated
                 key={rule.id}
-                entering={FadeInDown.duration(300).delay(index * 60)}
-                exiting={FadeOutUp.duration(250)}
-                layout={LinearTransition.springify().damping(16)}>
+                index={index}
+                focusCount={focusCount}>
                 <RuleCard
                   id={rule.id}
                   pattern={rule.pattern}
                   label={rule.label}
                   matchType={rule.match_type}
                   isActive={rule.is_active === 1}
-                  blockedCount={0}
+                  blockedCount={blockedCounts[rule.id] ?? 0}
                   onToggle={(value) => toggleRule(rule.id, value)}
                   onDelete={() => removeRule(rule.id)}
                   onEdit={() => router.push(`/add-rule?ruleId=${rule.id}`)}
                 />
-              </Animated.View>
+              </RuleCardAnimated>
             ))
           )}
         </ScrollView>
 
         {/* FAB — Add Rule */}
-        <Animated.View entering={FadeInDown.duration(400).delay(300)} style={[styles.fab, { bottom: insets.bottom + 20 }]}>
+        <Animated.View style={[styles.fab, { bottom: insets.bottom + 20 }, fabStyle]}>
           <TouchableOpacity
             style={styles.fabInner}
             activeOpacity={0.8}

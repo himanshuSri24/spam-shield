@@ -17,6 +17,7 @@ import {
   getBlockedCalls as dbGetBlockedCalls,
   getRecentBlockedCalls as dbGetRecentBlockedCalls,
   getStats as dbGetStats,
+  getBlockedCountsByRule as dbGetBlockedCountsByRule,
 } from '@/database/db';
 
 export function useRules() {
@@ -146,6 +147,25 @@ export function useStats() {
   }, [refresh]);
 
   return { stats, loading, refresh };
+}
+
+export function useRuleBlockedCounts() {
+  const [counts, setCounts] = useState<Record<number, number>>({});
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await dbGetBlockedCountsByRule();
+      setCounts(data);
+    } catch (error) {
+      console.error('Failed to load blocked counts:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { counts, refresh };
 }
 
 export { dbGetRuleById as getRuleById };
