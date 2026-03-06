@@ -1,12 +1,11 @@
 package expo.modules.callscreener
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.util.Log
 import org.json.JSONArray
-import java.io.File
+import org.json.JSONObject
 
 /**
  * HangUpCallScreeningService — The core of the Hang Up app.
@@ -106,38 +105,27 @@ class HangUpCallScreeningService : CallScreeningService() {
     }
 
     /**
-     * Log a blocked call to the SQLite database for the history screen.
+     * Log a blocked call to SharedPreferences as a pending entry.
+     * The JS side drains this queue on focus and inserts into SQLite,
+     * avoiding dual-writer WAL conflicts with expo-sqlite.
      */
     private fun logBlockedCall(phoneNumber: String, matchedRuleId: Int) {
-        val db = openDatabase() ?: return
         try {
-            db.execSQL(
-                "INSERT INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, datetime('now'))",
-                arrayOf(phoneNumber, matchedRuleId)
-            )
-            Log.d(TAG, "Logged blocked call from: $phoneNumber (rule ID: $matchedRuleId)")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error logging blocked call", e)
-        } finally {
-            db.close()
-        }
-    }
+            val prefs = applicationContext.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+            val pendingJson = prefs.getString("pending_blocked_calls", "[]") ?: "[]"
+            val pendingArray = JSONArray(pendingJson)
 
-    /**
-     * Open the expo-sqlite database for logging blocked calls.
-     */
-    private fun openDatabase(): SQLiteDatabase? {
-        return try {
-            val dbDir = File(applicationContext.filesDir.parentFile, "databases")
-            val dbFile = File(dbDir, "hangup.db")
-            if (!dbFile.exists()) {
-                Log.w(TAG, "Database file not found at: ${dbFile.absolutePath}")
-                return null
+            val entry = JSONObject().apply {
+                put("phone_number", phoneNumber)
+                put("matched_rule_id", matchedRuleId)
+                put("blocked_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US).format(java.util.Date()))
             }
-            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
+            pendingArray.put(entry)
+
+            prefs.edit().putString("pending_blocked_calls", pendingArray.toString()).apply()
+            Log.d(TAG, "Queued blocked call from: $phoneNumber (rule ID: $matchedRuleId), pending count: ${pendingArray.length()}")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to open database", e)
-            null
+            Log.e(TAG, "Error queuing blocked call", e)
         }
     }
 

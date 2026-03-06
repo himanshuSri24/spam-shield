@@ -1,11 +1,13 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { BlockedCallItem } from '@/components/BlockedCallItem';
 import { EmptyState } from '@/components/EmptyState';
 import { useBlockedCalls } from '@/hooks/useDatabase';
+import { drainPendingBlockedCalls } from '@/database/db';
 
 function formatTimestamp(dateStr: string): string {
   const date = new Date(dateStr);
@@ -25,8 +27,17 @@ function formatTimestamp(dateStr: string): string {
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
-  const { calls, loading } = useBlockedCalls(100);
+  const { calls, loading, refresh } = useBlockedCalls(100);
   const [search, setSearch] = React.useState('');
+
+  useFocusEffect(
+    React.useCallback(() => {
+      drainPendingBlockedCalls().then((count) => {
+        if (count > 0) refresh();
+      }).catch(() => {});
+      refresh();
+    }, [refresh])
+  );
 
   const filteredCalls = search.trim()
     ? calls.filter(c =>

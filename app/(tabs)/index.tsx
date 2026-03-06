@@ -8,7 +8,7 @@ import { FontFamily } from '@/constants/fonts';
 import { StatCard } from '@/components/StatCard';
 import { BlockedCallItem } from '@/components/BlockedCallItem';
 import { useStats, useRecentBlocks } from '@/hooks/useDatabase';
-import { flushDB } from '@/database/db';
+import { flushDB, drainPendingBlockedCalls } from '@/database/db';
 
 let CallScreener: any = null;
 try {
@@ -43,6 +43,13 @@ export default function DashboardScreen() {
   // Refresh data and check screening status whenever screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
+      // Drain any blocked calls queued by the native screening service
+      drainPendingBlockedCalls().then((count) => {
+        if (count > 0) {
+          refreshStats();
+          refreshRecent();
+        }
+      }).catch(() => {});
       refreshStats();
       refreshRecent();
       // Re-sync rules to SharedPreferences on every focus

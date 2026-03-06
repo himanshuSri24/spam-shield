@@ -192,6 +192,25 @@ class CallScreenerModule : Module() {
             }
         }
 
+        AsyncFunction("getPendingBlockedCalls") { promise: Promise ->
+            try {
+                val context = appContext.reactContext
+                if (context == null) {
+                    promise.resolve("[]")
+                    return@AsyncFunction
+                }
+                val prefs = context.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+                val pendingJson = prefs.getString("pending_blocked_calls", "[]") ?: "[]"
+                // Clear the queue after reading
+                prefs.edit().putString("pending_blocked_calls", "[]").apply()
+                Log.d(TAG, "Drained pending blocked calls: $pendingJson")
+                promise.resolve(pendingJson)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get pending blocked calls", e)
+                promise.resolve("[]")
+            }
+        }
+
         AsyncFunction("testMatch") { phoneNumber: String, promise: Promise ->
             val trace = mutableListOf<String>()
             try {

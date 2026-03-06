@@ -4,7 +4,7 @@
  */
 
 import * as SQLite from 'expo-sqlite';
-import { syncRules } from '../modules/call-screener';
+import { syncRules, getPendingBlockedCalls } from '../modules/call-screener';
 
 export type MatchType = 'exact' | 'starts_with' | 'ends_with' | 'contains' | 'regex';
 
@@ -126,6 +126,36 @@ export async function flushDB(): Promise<void> {
     await syncRules(JSON.stringify(activeRules));
   } catch (e) {
     console.error('Failed to sync rules to Native bridge:', e);
+  }
+}
+
+/**
+ * Drain pending blocked calls from Kotlin SharedPreferences into SQLite.
+ * The native service writes blocked calls to a SharedPreferences queue
+ * (since it can't write to expo-sqlite directly), and this function
+ * moves them into the proper database on the JS side.
+ * Returns the number of calls imported.
+ */
+export async function drainPendingBlockedCalls(): Promise<number> {
+  try {
+    const pendingJson = await getPendingBlockedCalls();
+    const pending: Array<{ phone_number: string; matched_rule_id: number; blocked_at: string }> = JSON.parse(pendingJson);
+
+    if (pending.length === 0) return 0;
+
+    const database = await getDB();
+    for (const call of pending) {
+      await database.runAsync(
+        'INSERT INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, ?)',
+        [call.phone_number, call.matched_rule_id, call.blocked_at]
+      );
+    }
+
+    console.log(`Imported ${pending.length} pending blocked call(s) from native queue`);
+    return pending.length;
+  } catch (e) {
+    console.error('Failed to drain pending blocked calls:', e);
+    return 0;
   }
 }
 

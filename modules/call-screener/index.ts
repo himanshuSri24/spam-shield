@@ -38,6 +38,15 @@ export function openScreeningSettings(): Promise<boolean> {
 }
 
 /**
+ * Drain the pending blocked calls queue from SharedPreferences.
+ * Returns a JSON string of [{phone_number, matched_rule_id, blocked_at}, ...].
+ * The queue is cleared after reading.
+ */
+export function getPendingBlockedCalls(): Promise<string> {
+  return CallScreenerModule.getPendingBlockedCalls();
+}
+
+/**
  * Developer test method to verify match logic without a real call.
  */
 export function testMatch(phoneNumber: string): Promise<any> {
