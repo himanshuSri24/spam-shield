@@ -1,36 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Hang Up App Icon - Retro Pastel Theme -->
-  <!-- Background: Cream (#FFF5EC) -->
-  <rect width="1024" height="1024" rx="220" fill="#FFF5EC"/>
+  <!-- Hang Up App Icon - Bold modern design -->
   
-  <!-- Decorative circle behind phone -->
-  <circle cx="512" cy="480" r="280" fill="#D4613A" opacity="0.12"/>
+  <!-- Background with warm gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF5EC"/>
+      <stop offset="100%" stop-color="#FFE8D6"/>
+    </linearGradient>
+    <linearGradient id="coral-grad" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#E8845F"/>
+      <stop offset="100%" stop-color="#B84E2B"/>
+    </linearGradient>
+    <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D4613A"/>
+      <stop offset="100%" stop-color="#C14A2B"/>
+    </linearGradient>
+  </defs>
   
-  <!-- Phone handset (hung up / rotated) - Coral accent -->
-  <g transform="translate(512, 480) rotate(135)">
-    <!-- Left earpiece -->
-    <rect x="-160" y="-40" width="80" height="80" rx="20" fill="#D4613A"/>
-    <!-- Right earpiece -->
-    <rect x="80" y="-40" width="80" height="80" rx="20" fill="#D4613A"/>
-    <!-- Handle connecting earpieces -->
-    <path d="M-120 40 Q-120 100 -60 120 L60 120 Q120 100 120 40" 
-          stroke="#D4613A" stroke-width="28" fill="none" stroke-linecap="round"/>
-  </g>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
   
-  <!-- X mark (block symbol) -->
-  <g transform="translate(512, 480)">
-    <circle cx="0" cy="0" r="60" fill="#C14A2B" opacity="0.9"/>
-    <line x1="-22" y1="-22" x2="22" y2="22" stroke="#FFF5EC" stroke-width="10" stroke-linecap="round"/>
-    <line x1="22" y1="-22" x2="-22" y2="22" stroke="#FFF5EC" stroke-width="10" stroke-linecap="round"/>
+  <!-- Large bold phone-down symbol -->
+  <!-- Outer ring - the "no" circle -->
+  <circle cx="512" cy="460" r="260" fill="none" stroke="url(#ring-grad)" stroke-width="42" opacity="0.15"/>
+  <circle cx="512" cy="460" r="260" fill="none" stroke="url(#ring-grad)" stroke-width="42" stroke-dasharray="1640" stroke-dashoffset="410" stroke-linecap="round"/>
+  
+  <!-- Minimal phone icon - flat modern style, hung up position -->
+  <g transform="translate(512, 460)">
+    <!-- Phone body - single sleek rounded rectangle rotated -->
+    <rect x="-130" y="-28" width="260" height="56" rx="28" fill="url(#coral-grad)"/>
+    <!-- Left bump (earpiece) -->
+    <rect x="-145" y="-45" width="60" height="90" rx="22" fill="url(#coral-grad)"/>
+    <!-- Right bump (mouthpiece) -->
+    <rect x="85" y="-45" width="60" height="90" rx="22" fill="url(#coral-grad)"/>
   </g>
 
-  <!-- App name text -->
-  <text x="512" y="780" text-anchor="middle" font-family="serif" font-weight="700" font-size="110" fill="#1A1A1A" letter-spacing="4">
+  <!-- Diagonal slash through - the "block" indicator -->
+  <line x1="330" y1="290" x2="694" y2="630" stroke="#B84E2B" stroke-width="36" stroke-linecap="round" opacity="0.9"/>
+  
+  <!-- App name - clean modern serif -->
+  <text x="512" y="800" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="120" fill="#2D2D2D" letter-spacing="6">
     HANG UP
   </text>
   
-  <!-- Subtle tagline -->
-  <text x="512" y="840" text-anchor="middle" font-family="sans-serif" font-weight="400" font-size="40" fill="#8B9A7E" letter-spacing="6">
-    CALL BLOCKER
-  </text>
+  <!-- Thin accent line under text -->
+  <line x1="370" y1="830" x2="654" y2="830" stroke="#D4613A" stroke-width="4" stroke-linecap="round"/>
 </svg>

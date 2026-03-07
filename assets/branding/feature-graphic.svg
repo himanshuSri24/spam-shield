@@ -1,41 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Play Store Feature Graphic Background (1024x500 scaled) -->
-  <!-- Full branding banner -->
-  <rect width="1024" height="1024" fill="#FFF5EC"/>
-  
-  <!-- Large decorative elements -->
-  <circle cx="100" cy="100" r="400" fill="#D4613A" opacity="0.06"/>
-  <circle cx="924" cy="924" r="400" fill="#8B9A7E" opacity="0.06"/>
-  
-  <!-- Central phone icon -->
-  <g transform="translate(512, 380) rotate(135)">
-    <rect x="-140" y="-36" width="72" height="72" rx="18" fill="#D4613A"/>
-    <rect x="68" y="-36" width="72" height="72" rx="18" fill="#D4613A"/>
-    <path d="M-104 36 Q-104 90 -52 108 L52 108 Q104 90 104 36" 
-          stroke="#D4613A" stroke-width="24" fill="none" stroke-linecap="round"/>
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
+  <defs>
+    <linearGradient id="fg-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF5EC"/>
+      <stop offset="100%" stop-color="#FFE8D6"/>
+    </linearGradient>
+    <linearGradient id="fg-coral" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#E8845F"/>
+      <stop offset="100%" stop-color="#B84E2B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#fg-bg)"/>
+  <circle cx="80" cy="60" r="300" fill="#D4613A" opacity="0.04"/>
+  <circle cx="944" cy="440" r="300" fill="#8B9A7E" opacity="0.04"/>
+  <g transform="translate(350, 210)">
+    <rect x="-100" y="-22" width="200" height="44" rx="22" fill="url(#fg-coral)"/>
+    <rect x="-115" y="-36" width="50" height="72" rx="18" fill="url(#fg-coral)"/>
+    <rect x="65" y="-36" width="50" height="72" rx="18" fill="url(#fg-coral)"/>
   </g>
-  
-  <!-- Block circle -->
-  <g transform="translate(512, 380)">
-    <circle cx="0" cy="0" r="52" fill="#C14A2B"/>
-    <line x1="-18" y1="-18" x2="18" y2="18" stroke="#FFF5EC" stroke-width="8" stroke-linecap="round"/>
-    <line x1="18" y1="-18" x2="-18" y2="18" stroke="#FFF5EC" stroke-width="8" stroke-linecap="round"/>
-  </g>
-
-  <!-- App name -->
-  <text x="512" y="620" text-anchor="middle" font-family="serif" font-weight="700" font-size="120" fill="#1A1A1A" letter-spacing="6">
-    HANG UP
-  </text>
-  
-  <!-- Tagline -->
-  <text x="512" y="700" text-anchor="middle" font-family="sans-serif" font-weight="400" font-size="44" fill="#8B9A7E" letter-spacing="8">
-    BLOCK UNWANTED CALLS
-  </text>
-
-  <!-- Decorative bottom dots -->
-  <circle cx="452" cy="780" r="6" fill="#D4613A" opacity="0.4"/>
-  <circle cx="482" cy="780" r="6" fill="#D4613A" opacity="0.6"/>
-  <circle cx="512" cy="780" r="6" fill="#D4613A" opacity="0.8"/>
-  <circle cx="542" cy="780" r="6" fill="#D4613A" opacity="0.6"/>
-  <circle cx="572" cy="780" r="6" fill="#D4613A" opacity="0.4"/>
+  <line x1="255" y1="130" x2="445" y2="290" stroke="#B84E2B" stroke-width="28" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="350" cy="210" r="140" fill="none" stroke="#D4613A" stroke-width="20" stroke-dasharray="880" stroke-dashoffset="220" stroke-linecap="round" opacity="0.18"/>
+  <text x="640" y="200" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="80" fill="#2D2D2D" letter-spacing="4">HANG UP</text>
+  <line x1="540" y1="222" x2="740" y2="222" stroke="#D4613A" stroke-width="3" stroke-linecap="round"/>
+  <text x="640" y="275" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="400" font-size="24" fill="#8B9A7E" letter-spacing="6">BLOCK UNWANTED CALLS</text>
+  <circle cx="590" cy="340" r="4" fill="#D4613A" opacity="0.3"/>
+  <circle cx="612" cy="340" r="4" fill="#D4613A" opacity="0.5"/>
+  <circle cx="634" cy="340" r="4" fill="#D4613A" opacity="0.7"/>
+  <circle cx="656" cy="340" r="4" fill="#D4613A" opacity="0.5"/>
+  <circle cx="678" cy="340" r="4" fill="#D4613A" opacity="0.3"/>
 </svg>

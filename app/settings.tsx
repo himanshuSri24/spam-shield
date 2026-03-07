@@ -164,9 +164,6 @@ export default function SettingsScreen() {
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Call Screening Active</Text>
-              <Text style={styles.settingDescription}>
-                Status: {serviceStatus === 'active' ? '🟢 Active' : serviceStatus === 'inactive' ? '🔴 Inactive' : serviceStatus}
-              </Text>
             </View>
             {isRequesting ? (
               <ActivityIndicator color={Colors.coral} />
@@ -356,12 +353,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 15,
     color: Colors.textPrimary,
-  },
-  settingDescription: {
-    fontFamily: FontFamily.bodyRegular,
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
   },
   enableHint: {
     fontFamily: FontFamily.bodyRegular,

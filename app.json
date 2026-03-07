@@ -16,7 +16,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.hangup.callblocker"
+      "package": "com.devwithcoffee.hangup"
     },
     "plugins": [
       "expo-router",

@@ -1,0 +1,15 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
+  <defs>
+    <linearGradient id="sp-coral" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#E8845F"/>
+      <stop offset="100%" stop-color="#B84E2B"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(140, 140)">
+    <rect x="-72" y="-16" width="144" height="32" rx="16" fill="url(#sp-coral)"/>
+    <rect x="-82" y="-26" width="34" height="52" rx="12" fill="url(#sp-coral)"/>
+    <rect x="48" y="-26" width="34" height="52" rx="12" fill="url(#sp-coral)"/>
+  </g>
+  <line x1="70" y1="76" x2="210" y2="204" stroke="#B84E2B" stroke-width="18" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="140" cy="140" r="110" fill="none" stroke="#D4613A" stroke-width="14" stroke-dasharray="691" stroke-dashoffset="173" stroke-linecap="round" opacity="0.18"/>
+</svg>
