@@ -17,14 +17,6 @@ interface RuleCardProps {
   onEdit: () => void;
 }
 
-const MATCH_TYPE_ICONS: Record<MatchType, string> = {
-  exact: '🎯',
-  starts_with: '▶️',
-  ends_with: '◀️',
-  contains: '🔍',
-  regex: '⚙️',
-};
-
 const MATCH_TYPE_LABELS: Record<MatchType, string> = {
   exact: 'Exact',
   starts_with: 'Starts with',
@@ -76,7 +68,6 @@ export function RuleCard({
           style={styles.deleteButton}
           onPress={handleDelete}
           activeOpacity={0.8}>
-          <Text style={styles.deleteIcon}>🗑️</Text>
           <Text style={styles.deleteText}>Delete</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -96,15 +87,10 @@ export function RuleCard({
         activeOpacity={0.7}>
         <View style={styles.left}>
           <View style={styles.topRow}>
-            <View style={styles.matchInfo}>
-              <Text style={styles.matchIcon}>
-                {MATCH_TYPE_ICONS[matchType] ?? '📝'}
+            <View style={[styles.matchTypeBadge, !isActive && styles.matchTypeBadgeInactive]}>
+              <Text style={[styles.matchTypeText, !isActive && styles.matchTypeTextInactive]}>
+                {MATCH_TYPE_LABELS[matchType] ?? matchType}
               </Text>
-              <View style={[styles.matchTypeBadge, !isActive && styles.matchTypeBadgeInactive]}>
-                <Text style={[styles.matchTypeText, !isActive && styles.matchTypeTextInactive]}>
-                  {MATCH_TYPE_LABELS[matchType] ?? matchType}
-                </Text>
-              </View>
             </View>
           </View>
           <View style={[styles.patternBadge, !isActive && styles.patternBadgeInactive]}>
@@ -155,14 +141,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.sm,
-  },
-  matchInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  matchIcon: {
-    fontSize: 14,
   },
   matchTypeBadge: {
     backgroundColor: Colors.sagePale,
@@ -232,10 +210,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 72,
-  },
-  deleteIcon: {
-    fontSize: 18,
-    marginBottom: 2,
   },
   deleteText: {
     fontFamily: FontFamily.bodySemiBold,
