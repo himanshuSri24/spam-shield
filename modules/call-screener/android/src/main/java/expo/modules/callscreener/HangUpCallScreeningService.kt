@@ -8,7 +8,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * HangUpCallScreeningService — The core of the Hang Up app.
+ * HangUpCallScreeningService - The core of the Hang Up app.
  *
  * Runs as a background service whenever a call comes in.
  * Reads blocking rules from SharedPreferences (synced from JS via the bridge),

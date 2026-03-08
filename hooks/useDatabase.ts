@@ -1,6 +1,5 @@
-/**
- * React hooks for consuming the SQLite database.
- */
+// React hooks that wrap all the database queries.
+// Each hook manages its own loading state and exposes a refresh() for manual re-fetching.
 
 import { useState, useEffect, useCallback } from 'react';
 import {

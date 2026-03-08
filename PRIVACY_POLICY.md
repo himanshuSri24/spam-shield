@@ -1,4 +1,4 @@
-# Privacy Policy — Hang Up
+# Privacy Policy - Hang Up
 
 **Last updated:** March 2026
 
@@ -10,7 +10,7 @@ Hang Up ("the App") is a call blocking application for Android. Your privacy is 
 
 **Hang Up does not collect, transmit, or share any personal data.**
 
-All data created by the App — including blocking rules, blocked call logs, and settings — is stored exclusively on your device using a local SQLite database. No data is ever sent to external servers, cloud services, or third parties.
+All data created by the App (blocking rules, blocked call logs, and settings) is stored exclusively on your device using a local SQLite database. No data is ever sent to external servers, cloud services, or third parties.
 
 ## What Data Is Stored Locally
 

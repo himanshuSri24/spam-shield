@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -41,7 +41,7 @@ const STEPS = [
   {
     icon: '✨',
     title: "You're All\nSet",
-    body: '', // Dynamic — set in the component
+    body: '', // set dynamically in the component
   },
 ];
 

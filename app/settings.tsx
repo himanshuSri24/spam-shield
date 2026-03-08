@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -21,15 +21,15 @@ interface FAQItem {
 const FAQ_ITEMS: FAQItem[] = [
   {
     question: 'How does call blocking work?',
-    answer: 'When a call comes in, Android passes it through Hang Up before your phone rings. Hang Up checks the number against your rules and silently rejects matching calls — they never ring.',
+    answer: 'When a call comes in, Android passes it through Hang Up before your phone rings. Hang Up checks the number against your rules and silently rejects matching calls. They never ring.',
   },
   {
     question: 'Why do I need to set Hang Up as default?',
-    answer: 'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure — only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
+    answer: 'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure - only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
   },
   {
     question: 'Does it block saved contacts?',
-    answer: 'Android does not pass calls from your saved contacts through the call screening service. This means Hang Up cannot block numbers in your contacts — it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.',
+    answer: 'Android does not pass calls from your saved contacts through the call screening service. This means Hang Up cannot block numbers in your contacts - it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.',
   },
   {
     question: 'What are match types?',
@@ -77,7 +77,7 @@ export default function SettingsScreen() {
     }
   };
 
-  // Poll for status changes after requesting the role
+  // System role request opens an external dialog, so we poll to detect the result
   const pollForStatusChange = async (maxAttempts: number = 10, delayMs: number = 1000) => {
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -115,7 +115,7 @@ export default function SettingsScreen() {
         } else if (result === 'requested') {
           const success = await pollForStatusChange(3, 800);
           if (!success) {
-            // System dialog didn't appear — open settings directly
+            // System dialog didn't appear, open settings directly
             try { await CallScreener.openScreeningSettings(); } catch {}
           }
         } else {
@@ -260,7 +260,26 @@ export default function SettingsScreen() {
           <Text style={styles.dangerButtonText}>Clear All Data</Text>
         </TouchableOpacity>
 
-        
+        {/* Made by */}
+        <View style={styles.madeByCard}>
+          <Text style={styles.madeByTitle}>Made by devwithcoffee</Text>
+          <View style={styles.madeByLinks}>
+            <TouchableOpacity
+              style={styles.madeByLink}
+              onPress={() => Linking.openURL('https://buymeacoffee.com/devwithcoffee')}
+              activeOpacity={0.7}>
+              <Text style={styles.madeByLinkIcon}>☕</Text>
+              <Text style={styles.madeByLinkText}>Buy Me a Coffee</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.madeByLink}
+              onPress={() => Linking.openURL('https://devwithcoffee.com')}
+              activeOpacity={0.7}>
+              <Text style={styles.madeByLinkIcon}>🌐</Text>
+              <Text style={styles.madeByLinkText}>devwithcoffee.com</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -431,6 +450,40 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 15,
+    color: Colors.coral,
+  },
+  madeByCard: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    marginBottom: Spacing.xxl,
+  },
+  madeByTitle: {
+    fontFamily: FontFamily.displaySemiBold,
+    fontSize: 15,
+    color: Colors.textMuted,
+    marginBottom: Spacing.md,
+  },
+  madeByLinks: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  madeByLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.cardBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.round,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  madeByLinkIcon: {
+    fontSize: 14,
+  },
+  madeByLinkText: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 13,
     color: Colors.coral,
   },
 });

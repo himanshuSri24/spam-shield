@@ -4,13 +4,13 @@
  */
 
 export const FontFamily = {
-  // Headers — Playfair Display
+  // Playfair Display (headers)
   displayBold: 'PlayfairDisplay_700Bold',
   displaySemiBold: 'PlayfairDisplay_600SemiBold',
   displayRegular: 'PlayfairDisplay_400Regular',
   displayItalic: 'PlayfairDisplay_400Regular_Italic',
 
-  // Body — Inter
+  // Inter (body)
   bodyRegular: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
   bodySemiBold: 'Inter_600SemiBold',

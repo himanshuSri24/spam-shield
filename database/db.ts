@@ -255,6 +255,7 @@ export async function getRecentBlockedCalls(limit: number = 5): Promise<BlockedC
   return getBlockedCalls(limit);
 }
 
+// Returns a map of ruleId -> number of calls that rule has blocked
 export async function getBlockedCountsByRule(): Promise<Record<number, number>> {
   const database = await getDB();
   const rows = await database.getAllAsync<{ matched_rule_id: number; count: number }>(

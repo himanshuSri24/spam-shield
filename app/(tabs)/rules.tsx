@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeOutUp, LinearTransition, useSharedValue, useAnimatedStyle, withTiming, withDelay, Easing } from 'react-native-reanimated';
+import Animated, { FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -11,57 +11,15 @@ import { EmptyState } from '@/components/EmptyState';
 import { useRules, useRuleBlockedCounts } from '@/hooks/useDatabase';
 import { drainPendingBlockedCalls } from '@/database/db';
 
-/** Wrapper that re-triggers a staggered fade-in on every focus */
-function RuleCardAnimated({ children, index, focusCount }: { children: React.ReactNode; index: number; focusCount: number }) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(14);
-
-  React.useEffect(() => {
-    opacity.value = 0;
-    translateY.value = 14;
-    opacity.value = withDelay(index * 50, withTiming(1, { duration: 280, easing: Easing.out(Easing.quad) }));
-    translateY.value = withDelay(index * 50, withTiming(0, { duration: 320, easing: Easing.out(Easing.quad) }));
-  }, [focusCount]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return (
-    <Animated.View
-      exiting={FadeOutUp.duration(250)}
-      layout={LinearTransition.springify().damping(16)}
-      style={animStyle}>
-      {children}
-    </Animated.View>
-  );
-}
-
 export default function RulesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { rules, refresh, toggleRule, removeRule } = useRules();
   const { counts: blockedCounts, refresh: refreshCounts } = useRuleBlockedCounts();
-  const [focusCount, setFocusCount] = React.useState(0);
 
-  // Focus-driven FAB animation
-  const fabOpacity = useSharedValue(0);
-  const fabScale = useSharedValue(0.7);
-  const fabStyle = useAnimatedStyle(() => ({
-    opacity: fabOpacity.value,
-    transform: [{ scale: fabScale.value }],
-  }));
-
-  // Refresh when screen comes into focus (e.g., after adding a new rule)
+  // Refresh rules + blocked counts on focus (e.g., coming back from add-rule)
   useFocusEffect(
     React.useCallback(() => {
-      setFocusCount(c => c + 1);
-      fabOpacity.value = 0;
-      fabScale.value = 0.7;
-      fabOpacity.value = withDelay(200, withTiming(1, { duration: 300 }));
-      fabScale.value = withDelay(200, withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.5)) }));
-
       drainPendingBlockedCalls().then((count) => {
         if (count > 0) refreshCounts();
       }).catch(() => {});
@@ -99,10 +57,10 @@ export default function RulesScreen() {
             />
           ) : (
             rules.map((rule, index) => (
-              <RuleCardAnimated
+              <Animated.View
                 key={rule.id}
-                index={index}
-                focusCount={focusCount}>
+                exiting={FadeOutUp.duration(250)}
+                layout={LinearTransition.springify().damping(16)}>
                 <RuleCard
                   id={rule.id}
                   pattern={rule.pattern}
@@ -114,20 +72,20 @@ export default function RulesScreen() {
                   onDelete={() => removeRule(rule.id)}
                   onEdit={() => router.push(`/add-rule?ruleId=${rule.id}`)}
                 />
-              </RuleCardAnimated>
+              </Animated.View>
             ))
           )}
         </ScrollView>
 
-        {/* FAB — Add Rule */}
-        <Animated.View style={[styles.fab, { bottom: insets.bottom + 20 }, fabStyle]}>
+        {/* Add Rule button */}
+        <View style={[styles.fab, { bottom: insets.bottom + 20 }]}>
           <TouchableOpacity
             style={styles.fabInner}
             activeOpacity={0.8}
             onPress={() => router.push('/add-rule')}>
             <Text style={styles.fabIcon}>+</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </View>
     </GestureHandlerRootView>
   );

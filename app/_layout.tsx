@@ -34,7 +34,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      // Brief splash hold so it feels intentional
+      const timer = setTimeout(() => SplashScreen.hideAsync(), 400);
+      return () => clearTimeout(timer);
     }
   }, [fontsLoaded]);
 

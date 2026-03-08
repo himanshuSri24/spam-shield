@@ -89,16 +89,17 @@ export default function AddRuleScreen() {
     try {
       let cleanedPattern = pattern.trim();
       
-      // Strictly format 'Exact Match' using E.164 so it marries perfectly with Native screening.
+      // For exact match, normalize to E.164 format (+919563123456) so it
+      // matches what Android passes to the screening service. If the user
+      // types something weird that can't be parsed, just strip formatting.
       if (matchType === 'exact') {
          const regionCodes = Localization.getLocales();
          const defaultRegion = regionCodes.length > 0 && regionCodes[0].regionCode ? regionCodes[0].regionCode : 'US';
-         // @ts-ignore
+         // @ts-ignore - libphonenumber types are slightly off
          const phoneNumber = parsePhoneNumberFromString(cleanedPattern, defaultRegion);
          if (phoneNumber && phoneNumber.isValid()) {
              cleanedPattern = phoneNumber.number as string;
          } else {
-             // If parsing fails, fall back to stripping spaces
              cleanedPattern = cleanedPattern.replace(/[\s\-\(\)]/g, '');
          }
       }

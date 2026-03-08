@@ -1,12 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -16,11 +9,12 @@ import { BlockedCallItem } from '@/components/BlockedCallItem';
 import { useStats, useRecentBlocks } from '@/hooks/useDatabase';
 import { flushDB, drainPendingBlockedCalls } from '@/database/db';
 
+// The native module only exists in dev builds, not Expo Go
 let CallScreener: any = null;
 try {
   CallScreener = require('../../modules/call-screener');
 } catch (e: any) {
-  // Native module not available (e.g. Expo Go)
+  // Silently fail - call screening just won't be available
 }
 
 function formatTimestamp(dateStr: string): string {
@@ -45,38 +39,14 @@ export default function DashboardScreen() {
   const { stats, refresh: refreshStats } = useStats();
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
   const [screeningActive, setScreeningActive] = useState(true);
-  const animKey = useRef(0);
 
-  // Focus-driven fade/slide animations
-  const headerOpacity = useSharedValue(0);
-  const headerTranslateY = useSharedValue(18);
-  const recentOpacity = useSharedValue(0);
-  const recentTranslateY = useSharedValue(18);
-
-  const headerStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ translateY: headerTranslateY.value }],
-  }));
-  const recentStyle = useAnimatedStyle(() => ({
-    opacity: recentOpacity.value,
-    transform: [{ translateY: recentTranslateY.value }],
-  }));
-
-  // Refresh data and check screening status whenever screen comes into focus
+  // Every time the dashboard comes into focus:
+  // 1. Pull any blocked calls the Kotlin service queued while we were away
+  // 2. Refresh all the stats and recent blocks
+  // 3. Re-sync rules to native SharedPreferences (belt and suspenders)
+  // 4. Check if we're still the default screening app
   useFocusEffect(
     React.useCallback(() => {
-      // Trigger animations
-      animKey.current += 1;
-      headerOpacity.value = 0;
-      headerTranslateY.value = 18;
-      recentOpacity.value = 0;
-      recentTranslateY.value = 18;
-      headerOpacity.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) });
-      headerTranslateY.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) });
-      recentOpacity.value = withDelay(500, withTiming(1, { duration: 400 }));
-      recentTranslateY.value = withDelay(500, withTiming(0, { duration: 400 }));
-
-      // Drain any blocked calls queued by the native screening service
       drainPendingBlockedCalls().then((count) => {
         if (count > 0) {
           refreshStats();
@@ -85,9 +55,7 @@ export default function DashboardScreen() {
       }).catch(() => {});
       refreshStats();
       refreshRecent();
-      // Re-sync rules to SharedPreferences on every focus
       flushDB().catch(() => {});
-      // Check if call screening role is still held
       if (CallScreener) {
         CallScreener.isScreeningEnabled()
           .then((enabled: boolean) => setScreeningActive(enabled))
@@ -96,6 +64,8 @@ export default function DashboardScreen() {
     }, [refreshStats, refreshRecent])
   );
 
+  // Try to enable call screening. Some OEMs (MIUI, HyperOS) don't show
+  // the standard system dialog, so we fall back to opening settings manually.
   const handleEnableScreening = async () => {
     if (!CallScreener) return;
     try {
@@ -104,13 +74,12 @@ export default function DashboardScreen() {
         setScreeningActive(true);
         return;
       }
-      // Poll briefly for the system dialog result
+      // Poll briefly - the system dialog runs in a separate activity
       for (let i = 0; i < 3; i++) {
         await new Promise(r => setTimeout(r, 800));
         const enabled = await CallScreener.isScreeningEnabled();
         if (enabled) { setScreeningActive(true); return; }
       }
-      // System dialog likely didn't appear (MIUI/HyperOS) — open settings directly
       try { await CallScreener.openScreeningSettings(); } catch {}
     } catch (e) {
       try { await CallScreener.openScreeningSettings(); } catch {}
@@ -124,7 +93,7 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={false}>
 
       {/* Header */}
-      <Animated.View style={[styles.header, headerStyle]}>
+      <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ width: 36 }} />
           <Text style={styles.appName}>Hang Up</Text>
@@ -136,21 +105,21 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
         <Text style={styles.tagline}>Your calls, your rules.</Text>
-      </Animated.View>
+      </View>
 
       {/* Screening disabled warning */}
       {!screeningActive && (
-        <Animated.View style={headerStyle}>
+        <View>
           <TouchableOpacity
             style={styles.warningBanner}
             onPress={handleEnableScreening}
             activeOpacity={0.8}>
             <Text style={styles.warningText}>
-              ⚠ Call screening is disabled — calls won't be blocked.
+              ⚠ Call screening is disabled. Calls won't be blocked.
             </Text>
             <Text style={styles.warningAction}>Tap to enable</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       )}
 
       {/* Decorative divider */}
@@ -168,8 +137,6 @@ export default function DashboardScreen() {
             label="Calls Blocked"
             sublabel="All time"
             accent
-            delay={200}
-            animKey={animKey.current}
           />
         </View>
         <View style={styles.statRow}>
@@ -177,16 +144,12 @@ export default function DashboardScreen() {
             <StatCard
               value={stats.blockedToday}
               label="Today"
-              delay={350}
-              animKey={animKey.current}
             />
           </View>
           <View style={styles.statHalf}>
             <StatCard
               value={stats.activeRules}
               label="Active Rules"
-              delay={500}
-              animKey={animKey.current}
             />
           </View>
         </View>
@@ -194,7 +157,7 @@ export default function DashboardScreen() {
 
       {/* Recent Blocks */}
       {recentBlocks.length > 0 && (
-        <Animated.View style={[styles.section, recentStyle]}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Blocks</Text>
           </View>
@@ -208,7 +171,7 @@ export default function DashboardScreen() {
               />
             ))}
           </View>
-        </Animated.View>
+        </View>
       )}
 
       {/* Bottom padding */}

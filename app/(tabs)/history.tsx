@@ -86,7 +86,7 @@ export default function HistoryScreen() {
             message={
               search
                 ? 'Try a different search term.'
-                : 'When calls are blocked, they\u2019ll appear here.'
+                : "When calls are blocked, they'll appear here."
             }
           />
         ) : (

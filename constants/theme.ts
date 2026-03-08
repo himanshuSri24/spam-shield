@@ -1,5 +1,5 @@
 /**
- * Hang Up — Design Tokens
+ * Hang Up - Design Tokens
  *
  * Retro pastel theme inspired by editorial design.
  * Warm cream backgrounds, coral accents, clean typography.
@@ -12,13 +12,13 @@ export const Colors = {
   white: '#FFFFFF',
   cardBg: '#FFFBF7',
 
-  // Primary accent — coral/red-orange
+  // Primary accent (coral)
   coral: '#D4613A',
   coralLight: '#E8845F',
   coralPale: '#FFE5D9',
   coralDark: '#B84E2B',
 
-  // Secondary — muted sage/olive
+  // Secondary (sage)
   sage: '#8B9A7E',
   sagePale: '#E8EDE4',
 
@@ -84,7 +84,7 @@ export const Shadows = {
 };
 
 export const Typography = {
-  // Headers — will use Playfair Display when fonts loaded
+  // Headers (Playfair Display)
   displayLarge: {
     fontSize: 36,
     fontWeight: '700' as const,
@@ -134,7 +134,7 @@ export const Typography = {
     letterSpacing: 0.8,
   },
 
-  // Numbers — for stats
+  // Stats numbers
   statLarge: {
     fontSize: 48,
     fontWeight: '700' as const,

@@ -1,4 +1,4 @@
-# Play Store Listing — Hang Up
+# Play Store Listing - Hang Up
 
 ## App Name
 Hang Up – Call Blocker
@@ -8,12 +8,12 @@ Block unwanted calls with custom rules. Lightweight, private, no ads.
 
 ## Full Description (4000 chars max)
 
-**Hang Up** is a clean, elegant call blocker that lets you take control of who can reach you. Create flexible blocking rules using exact numbers, prefixes, suffixes, patterns, or even regex — and never be bothered by spam callers again.
+**Hang Up** is a clean, elegant call blocker that lets you take control of who can reach you. Create flexible blocking rules using exact numbers, prefixes, suffixes, patterns, or even regex - and never be bothered by spam callers again.
 
 🛡️ **Powerful Blocking Rules**
 • Block exact phone numbers
-• Block by prefix — stop all calls from a specific area code
-• Block by suffix or pattern — catch variations of spam numbers
+• Block by prefix - stop all calls from a specific area code
+• Block by suffix or pattern - catch variations of spam numbers
 • Advanced regex support for power users
 • Quickly add rules from preset templates
 
@@ -25,12 +25,12 @@ Block unwanted calls with custom rules. Lightweight, private, no ads.
 ⚙️ **Simple Setup**
 • One-tap to set as your default call screening app
 • Works automatically in the background with zero battery drain
-• No account required — everything stays on your device
+• No account required - everything stays on your device
 
 🔒 **Privacy First**
-• 100% offline — no data leaves your phone
+• 100% offline - no data leaves your phone
 • No analytics, no tracking, no ads
-• Open source — verify the code yourself
+• Open source - verify the code yourself
 • All data stored locally in SQLite
 
 📱 **Designed with Care**
