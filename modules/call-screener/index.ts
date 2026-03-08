@@ -4,7 +4,7 @@ import CallScreenerModule from './src/CallScreenerModule';
  * Request the user to set this app as the default call screening app.
  * Opens the system dialog to change the caller ID & spam app.
  */
-export function requestScreeningRole(): Promise<boolean> {
+export function requestScreeningRole(): Promise<string> {
   return CallScreenerModule.requestScreeningRole();
 }
 
