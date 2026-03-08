@@ -11,16 +11,19 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import { isOnboardingComplete } from './onboarding';
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const router = useRouter();
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
     PlayfairDisplay_400Regular_Italic,
@@ -34,13 +37,17 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      // Brief splash hold so it feels intentional
-      const timer = setTimeout(() => SplashScreen.hideAsync(), 400);
-      return () => clearTimeout(timer);
+      isOnboardingComplete().then((complete) => {
+        if (!complete) {
+          router.replace('/onboarding');
+        }
+        setOnboardingChecked(true);
+        SplashScreen.hideAsync();
+      });
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !onboardingChecked) {
     return null;
   }
 
