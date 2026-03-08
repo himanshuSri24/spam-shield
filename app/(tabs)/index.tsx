@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -8,14 +8,11 @@ import { StatCard } from '@/components/StatCard';
 import { BlockedCallItem } from '@/components/BlockedCallItem';
 import { useStats, useRecentBlocks } from '@/hooks/useDatabase';
 import { flushDB, drainPendingBlockedCalls } from '@/database/db';
-
-// The native module only exists in dev builds, not Expo Go
-let CallScreener: any = null;
-try {
-  CallScreener = require('../../modules/call-screener');
-} catch (e: any) {
-  // Silently fail - call screening just won't be available
-}
+import {
+  requestScreeningRole,
+  isScreeningEnabled,
+  openScreeningSettings,
+} from '../../modules/call-screener';
 
 function formatTimestamp(dateStr: string): string {
   const date = new Date(dateStr);
@@ -39,12 +36,23 @@ export default function DashboardScreen() {
   const { stats, refresh: refreshStats } = useStats();
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
   const [screeningActive, setScreeningActive] = useState(true);
+  const [enablingScreening, setEnablingScreening] = useState(false);
+  const waitingForRole = useRef(false);
 
-  // Every time the dashboard comes into focus:
-  // 1. Pull any blocked calls the Kotlin service queued while we were away
-  // 2. Refresh all the stats and recent blocks
-  // 3. Re-sync rules to native SharedPreferences (belt and suspenders)
-  // 4. Check if we're still the default screening app
+  // When user returns from system dialog, check role status
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && waitingForRole.current) {
+        waitingForRole.current = false;
+        setEnablingScreening(false);
+        isScreeningEnabled()
+          .then((enabled) => setScreeningActive(enabled))
+          .catch(() => {});
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
   useFocusEffect(
     React.useCallback(() => {
       drainPendingBlockedCalls().then((count) => {
@@ -56,33 +64,26 @@ export default function DashboardScreen() {
       refreshStats();
       refreshRecent();
       flushDB().catch(() => {});
-      if (CallScreener) {
-        CallScreener.isScreeningEnabled()
-          .then((enabled: boolean) => setScreeningActive(enabled))
-          .catch(() => {});
-      }
+      isScreeningEnabled()
+        .then((enabled) => setScreeningActive(enabled))
+        .catch(() => {});
     }, [refreshStats, refreshRecent])
   );
 
-  // Try to enable call screening. Some OEMs (MIUI, HyperOS) don't show
-  // the standard system dialog, so we fall back to opening settings manually.
   const handleEnableScreening = async () => {
-    if (!CallScreener) return;
+    setEnablingScreening(true);
     try {
-      const result = await CallScreener.requestScreeningRole();
+      const result = await requestScreeningRole();
       if (result === 'already_active') {
         setScreeningActive(true);
+        setEnablingScreening(false);
         return;
       }
-      // Poll briefly - the system dialog runs in a separate activity
-      for (let i = 0; i < 3; i++) {
-        await new Promise(r => setTimeout(r, 800));
-        const enabled = await CallScreener.isScreeningEnabled();
-        if (enabled) { setScreeningActive(true); return; }
-      }
-      try { await CallScreener.openScreeningSettings(); } catch {}
-    } catch (e) {
-      try { await CallScreener.openScreeningSettings(); } catch {}
+      // System dialog opened — AppState listener will handle the result
+      waitingForRole.current = true;
+    } catch {
+      try { await openScreeningSettings(); } catch {}
+      waitingForRole.current = true;
     }
   };
 
@@ -113,11 +114,23 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={styles.warningBanner}
             onPress={handleEnableScreening}
+            disabled={enablingScreening}
             activeOpacity={0.8}>
-            <Text style={styles.warningText}>
-              ⚠ Call screening is disabled. Calls won't be blocked.
-            </Text>
-            <Text style={styles.warningAction}>Tap to enable</Text>
+            {enablingScreening ? (
+              <>
+                <ActivityIndicator size="small" color="#92400E" />
+                <Text style={[styles.warningText, { marginTop: Spacing.xs }]}>
+                  Opening settings...
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.warningText}>
+                  Call screening is disabled. Calls won't be blocked.
+                </Text>
+                <Text style={styles.warningAction}>Tap to enable</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       )}

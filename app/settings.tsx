@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert, AppState, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { FontFamily } from '@/constants/fonts';
 import { clearAllData } from '@/database/db';
-
-let CallScreener: any = null;
-try {
-  CallScreener = require('../modules/call-screener');
-} catch (e: any) {
-  console.warn('CallScreener native module not available:', e?.message);
-}
+import {
+  requestScreeningRole,
+  isScreeningEnabled as checkScreeningEnabled,
+  getServiceStatus as checkServiceStatus,
+  openScreeningSettings,
+} from '../modules/call-screener';
 
 interface FAQItem {
   question: string;
@@ -56,82 +55,69 @@ export default function SettingsScreen() {
   const [serviceStatus, setServiceStatus] = useState<string>('checking...');
   const [isRequesting, setIsRequesting] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const waitingForRole = useRef(false);
 
   useEffect(() => {
     checkStatus();
   }, []);
 
-  const checkStatus = async () => {
-    if (!CallScreener) {
-      setServiceStatus('Requires dev build');
-      return;
-    }
+  // When user returns from system dialog, recheck status
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && waitingForRole.current) {
+        waitingForRole.current = false;
+        setIsRequesting(false);
+        checkStatus();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
+  const checkStatus = async () => {
     try {
-      const status = await CallScreener.getServiceStatus();
+      const status = await checkServiceStatus();
       setServiceStatus(status);
-      const enabled = await CallScreener.isScreeningEnabled();
+      const enabled = await checkScreeningEnabled();
       setScreeningEnabled(enabled);
-    } catch (e) {
+    } catch {
       setServiceStatus('unavailable');
     }
   };
 
-  // System role request opens an external dialog, so we poll to detect the result
-  const pollForStatusChange = async (maxAttempts: number = 10, delayMs: number = 1000) => {
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      try {
-        const enabled = await CallScreener.isScreeningEnabled();
-        if (enabled) {
-          setScreeningEnabled(true);
-          const status = await CallScreener.getServiceStatus();
-          setServiceStatus(status);
-          return true;
-        }
-      } catch (e) {
-        // Continue polling
-      }
-    }
-    // Final check
-    await checkStatus();
-    return false;
-  };
-
   const handleToggleScreening = async () => {
-    if (!CallScreener) {
-      Alert.alert('Dev Build Required', 'Call screening requires a native development build.');
-      return;
-    }
-
     if (!screeningEnabled) {
       try {
         setIsRequesting(true);
-        const result = await CallScreener.requestScreeningRole();
+        const result = await requestScreeningRole();
 
         if (result === 'already_active') {
           setScreeningEnabled(true);
           setServiceStatus('active');
-        } else if (result === 'requested') {
-          const success = await pollForStatusChange(3, 800);
-          if (!success) {
-            // System dialog didn't appear, open settings directly
-            try { await CallScreener.openScreeningSettings(); } catch {}
-          }
+          setIsRequesting(false);
         } else {
-          try { await CallScreener.openScreeningSettings(); } catch {}
+          // System dialog opened — AppState listener will handle the result
+          waitingForRole.current = true;
         }
-      } catch (e) {
-        console.error('Failed to request role:', e);
-        try { await CallScreener.openScreeningSettings(); } catch {}
-      } finally {
-        setIsRequesting(false);
+      } catch {
+        try { await openScreeningSettings(); } catch {}
+        waitingForRole.current = true;
       }
     } else {
       Alert.alert(
         'Disable Screening',
-        'To disable, go to your phone\'s Settings → Default apps → Caller ID & Spam and choose a different app.',
-        [{ text: 'OK' }]
+        'To disable call screening, choose a different app in the system settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Settings',
+            onPress: async () => {
+              try {
+                await openScreeningSettings();
+                waitingForRole.current = true;
+              } catch {}
+            },
+          },
+        ]
       );
     }
   };
@@ -226,7 +212,7 @@ export default function SettingsScreen() {
 
         {/* Privacy Statement */}
         <View style={styles.privacyCard}>
-          <Text style={styles.privacyTitle}>🔒 Privacy First</Text>
+          <Text style={styles.privacyTitle}>Privacy First</Text>
           <Text style={styles.privacyText}>
             Hang Up works entirely on your device. No data is ever sent to any server.
             Your blocking rules and call history never leave your phone.
@@ -265,14 +251,12 @@ export default function SettingsScreen() {
               style={styles.madeByLink}
               onPress={() => Linking.openURL('https://buymeacoffee.com/devwithcoffee')}
               activeOpacity={0.7}>
-              <Text style={styles.madeByLinkIcon}>☕</Text>
               <Text style={styles.madeByLinkText}>Buy Me a Coffee</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.madeByLink}
               onPress={() => Linking.openURL('https://devwithcoffee.com')}
               activeOpacity={0.7}>
-              <Text style={styles.madeByLinkIcon}>🌐</Text>
               <Text style={styles.madeByLinkText}>devwithcoffee.com</Text>
             </TouchableOpacity>
           </View>
@@ -468,9 +452,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     gap: Spacing.xs,
-  },
-  madeByLinkIcon: {
-    fontSize: 14,
   },
   madeByLinkText: {
     fontFamily: FontFamily.bodySemiBold,
