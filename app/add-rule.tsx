@@ -24,12 +24,12 @@ import {
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import * as Localization from 'expo-localization';
 
-const MATCH_TYPES: { type: MatchType; label: string; icon: string; hint: string }[] = [
-  { type: 'exact', label: 'Exact Number', icon: '🎯', hint: 'Blocks this exact number only' },
-  { type: 'starts_with', label: 'Starts With', icon: '▶️', hint: 'Blocks numbers starting with these digits' },
-  { type: 'ends_with', label: 'Ends With', icon: '◀️', hint: 'Blocks numbers ending with these digits' },
-  { type: 'contains', label: 'Contains', icon: '🔍', hint: 'Blocks numbers containing these digits' },
-  { type: 'regex', label: 'Regex', icon: '⚙️', hint: 'Advanced: blocks numbers matching a regular expression' },
+const MATCH_TYPES: { type: MatchType; label: string; hint: string }[] = [
+  { type: 'exact', label: 'Exact Number', hint: 'Blocks this exact number only' },
+  { type: 'starts_with', label: 'Starts With', hint: 'Blocks numbers starting with these digits' },
+  { type: 'ends_with', label: 'Ends With', hint: 'Blocks numbers ending with these digits' },
+  { type: 'contains', label: 'Contains', hint: 'Blocks numbers containing these digits' },
+  { type: 'regex', label: 'Regex', hint: 'Advanced: blocks numbers matching a regular expression' },
 ];
 
 const PRESETS = [
@@ -65,7 +65,7 @@ export default function AddRuleScreen() {
             setMatchType(rule.match_type);
           }
         } catch (e) {
-          console.error('Failed to load rule for editing:', e);
+          if (__DEV__) console.error('Failed to load rule for editing:', e);
         } finally {
           setLoadingRule(false);
         }
@@ -94,7 +94,7 @@ export default function AddRuleScreen() {
       // types something weird that can't be parsed, just strip formatting.
       if (matchType === 'exact') {
          const regionCodes = Localization.getLocales();
-         const defaultRegion = regionCodes.length > 0 && regionCodes[0].regionCode ? regionCodes[0].regionCode : 'US';
+         const defaultRegion = regionCodes.length > 0 && regionCodes[0].regionCode ? regionCodes[0].regionCode : 'IN';
          // @ts-ignore - libphonenumber types are slightly off
          const phoneNumber = parsePhoneNumberFromString(cleanedPattern, defaultRegion);
          if (phoneNumber && phoneNumber.isValid()) {
@@ -113,7 +113,7 @@ export default function AddRuleScreen() {
       }
       router.back();
     } catch (error) {
-      console.error('Failed to save rule:', error);
+      if (__DEV__) console.error('Failed to save rule:', error);
       Alert.alert('Error', 'Failed to save rule. Please try again.');
     }
   };
@@ -172,7 +172,6 @@ export default function AddRuleScreen() {
                     ]}
                     onPress={() => setMatchType(mt.type)}
                     activeOpacity={0.7}>
-                    <Text style={styles.matchTypeIcon}>{mt.icon}</Text>
                     <Text
                       style={[
                         styles.matchTypeLabel,
@@ -306,7 +305,7 @@ export default function AddRuleScreen() {
           {/* Saved contacts note */}
           <View style={styles.contactsNote}>
             <Text style={styles.contactsNoteText}>
-              ℹ️  Android skips call screening for saved contacts. Rules only apply to unknown callers.
+              Android skips call screening for saved contacts. Rules only apply to unknown callers.
             </Text>
           </View>
         </ScrollView>
@@ -410,9 +409,6 @@ const styles = StyleSheet.create({
   matchTypeCardActive: {
     backgroundColor: Colors.coralPale,
     borderColor: Colors.coral,
-  },
-  matchTypeIcon: {
-    fontSize: 18,
   },
   matchTypeLabel: {
     fontFamily: FontFamily.bodySemiBold,

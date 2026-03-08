@@ -28,7 +28,7 @@ export function useRules() {
       const data = await getRules();
       setRules(data);
     } catch (error) {
-      console.error('Failed to load rules:', error);
+      if (__DEV__) console.error('Failed to load rules:', error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export function useBlockedCalls(limit: number = 50) {
       const data = await dbGetBlockedCalls(limit);
       setCalls(data);
     } catch (error) {
-      console.error('Failed to load blocked calls:', error);
+      if (__DEV__) console.error('Failed to load blocked calls:', error);
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ export function useRecentBlocks() {
       const data = await dbGetRecentBlockedCalls(5);
       setCalls(data);
     } catch (error) {
-      console.error('Failed to load recent blocks:', error);
+      if (__DEV__) console.error('Failed to load recent blocks:', error);
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ export function useStats() {
       const data = await dbGetStats();
       setStats(data);
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      if (__DEV__) console.error('Failed to load stats:', error);
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,7 @@ export function useRuleBlockedCounts() {
       const data = await dbGetBlockedCountsByRule();
       setCounts(data);
     } catch (error) {
-      console.error('Failed to load blocked counts:', error);
+      if (__DEV__) console.error('Failed to load blocked counts:', error);
     }
   }, []);
 
