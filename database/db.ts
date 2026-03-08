@@ -62,54 +62,6 @@ async function initDB(database: SQLite.SQLiteDatabase): Promise<void> {
       FOREIGN KEY (matched_rule_id) REFERENCES rules(id) ON DELETE SET NULL
     );
   `);
-
-  // Migration: add match_type column if it doesn't exist (for existing installs)
-  try {
-    const tableInfo = await database.getAllAsync<{ name: string }>(
-      "PRAGMA table_info(rules)"
-    );
-    const hasMatchType = tableInfo.some(col => col.name === 'match_type');
-
-    if (!hasMatchType) {
-      await database.execAsync(
-        "ALTER TABLE rules ADD COLUMN match_type TEXT DEFAULT 'starts_with'"
-      );
-
-      // Migrate existing wildcard patterns to proper match types
-      const existingRules = await database.getAllAsync<{ id: number; pattern: string }>(
-        'SELECT id, pattern FROM rules'
-      );
-
-      for (const rule of existingRules) {
-        let newPattern = rule.pattern;
-        let matchType: MatchType = 'exact';
-
-        if (rule.pattern.startsWith('*') && rule.pattern.endsWith('*')) {
-          // *abc* → contains "abc"
-          matchType = 'contains';
-          newPattern = rule.pattern.slice(1, -1);
-        } else if (rule.pattern.endsWith('*')) {
-          // abc* → starts_with "abc"
-          matchType = 'starts_with';
-          newPattern = rule.pattern.slice(0, -1);
-        } else if (rule.pattern.startsWith('*')) {
-          // *abc → ends_with "abc"
-          matchType = 'ends_with';
-          newPattern = rule.pattern.slice(1);
-        }
-
-        await database.runAsync(
-          'UPDATE rules SET pattern = ?, match_type = ? WHERE id = ?',
-          [newPattern, matchType, rule.id]
-        );
-      }
-    }
-  } catch (e: any) {
-    // Column might already exist, that's fine
-    if (e?.message && !e.message.includes('duplicate column name')) {
-      console.warn('Migration check:', e);
-    }
-  }
 }
 
 /**
@@ -125,7 +77,7 @@ export async function flushDB(): Promise<void> {
     );
     await syncRules(JSON.stringify(activeRules));
   } catch (e) {
-    console.error('Failed to sync rules to Native bridge:', e);
+    if (__DEV__) console.error('Failed to sync rules to Native bridge:', e);
   }
 }
 
@@ -151,10 +103,10 @@ export async function drainPendingBlockedCalls(): Promise<number> {
       );
     }
 
-    console.log(`Imported ${pending.length} pending blocked call(s) from native queue`);
+    if (__DEV__) console.log(`Imported ${pending.length} pending blocked call(s) from native queue`);
     return pending.length;
   } catch (e) {
-    console.error('Failed to drain pending blocked calls:', e);
+    if (__DEV__) console.error('Failed to drain pending blocked calls:', e);
     return 0;
   }
 }
