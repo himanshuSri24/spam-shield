@@ -3,10 +3,15 @@
  * Uses expo-sqlite for completely offline local storage.
  */
 
-import * as SQLite from 'expo-sqlite';
-import { syncRules, getPendingBlockedCalls } from '../modules/call-screener';
+import * as SQLite from "expo-sqlite";
+import { getPendingBlockedCalls, syncRules } from "../modules/call-screener";
 
-export type MatchType = 'exact' | 'starts_with' | 'ends_with' | 'contains' | 'regex';
+export type MatchType =
+  | "exact"
+  | "starts_with"
+  | "ends_with"
+  | "contains"
+  | "regex";
 
 export interface Rule {
   id: number;
@@ -36,7 +41,7 @@ let db: SQLite.SQLiteDatabase | null = null;
 
 export async function getDB(): Promise<SQLite.SQLiteDatabase> {
   if (!db) {
-    db = await SQLite.openDatabaseAsync('hangup.db');
+    db = await SQLite.openDatabaseAsync("hangup.db");
     await initDB(db);
   }
   return db;
@@ -72,12 +77,14 @@ async function initDB(database: SQLite.SQLiteDatabase): Promise<void> {
 export async function flushDB(): Promise<void> {
   const database = await getDB();
   try {
-    const activeRules = await database.getAllAsync<{id: number, pattern: string, match_type: MatchType}>(
-      'SELECT id, pattern, match_type FROM rules WHERE is_active = 1'
-    );
+    const activeRules = await database.getAllAsync<{
+      id: number;
+      pattern: string;
+      match_type: MatchType;
+    }>("SELECT id, pattern, match_type FROM rules WHERE is_active = 1");
     await syncRules(JSON.stringify(activeRules));
   } catch (e) {
-    if (__DEV__) console.error('Failed to sync rules to Native bridge:', e);
+    if (__DEV__) console.error("Failed to sync rules to Native bridge:", e);
   }
 }
 
@@ -91,22 +98,29 @@ export async function flushDB(): Promise<void> {
 export async function drainPendingBlockedCalls(): Promise<number> {
   try {
     const pendingJson = await getPendingBlockedCalls();
-    const pending: Array<{ phone_number: string; matched_rule_id: number; blocked_at: string }> = JSON.parse(pendingJson);
+    const pending: Array<{
+      phone_number: string;
+      matched_rule_id: number;
+      blocked_at: string;
+    }> = JSON.parse(pendingJson);
 
     if (pending.length === 0) return 0;
 
     const database = await getDB();
     for (const call of pending) {
       await database.runAsync(
-        'INSERT INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, ?)',
-        [call.phone_number, call.matched_rule_id, call.blocked_at]
+        "INSERT INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, ?)",
+        [call.phone_number, call.matched_rule_id, call.blocked_at],
       );
     }
 
-    if (__DEV__) console.log(`Imported ${pending.length} pending blocked call(s) from native queue`);
+    if (__DEV__)
+      console.log(
+        `Imported ${pending.length} pending blocked call(s) from native queue`,
+      );
     return pending.length;
   } catch (e) {
-    if (__DEV__) console.error('Failed to drain pending blocked calls:', e);
+    if (__DEV__) console.error("Failed to drain pending blocked calls:", e);
     return 0;
   }
 }
@@ -116,27 +130,24 @@ export async function drainPendingBlockedCalls(): Promise<number> {
 export async function getRules(): Promise<Rule[]> {
   const database = await getDB();
   return database.getAllAsync<Rule>(
-    'SELECT * FROM rules ORDER BY created_at DESC'
+    "SELECT * FROM rules ORDER BY created_at DESC",
   );
 }
 
 export async function getRuleById(id: number): Promise<Rule | null> {
   const database = await getDB();
-  return database.getFirstAsync<Rule>(
-    'SELECT * FROM rules WHERE id = ?',
-    [id]
-  );
+  return database.getFirstAsync<Rule>("SELECT * FROM rules WHERE id = ?", [id]);
 }
 
 export async function addRule(
   pattern: string,
   label: string,
-  matchType: MatchType = 'starts_with'
+  matchType: MatchType = "starts_with",
 ): Promise<Rule> {
   const database = await getDB();
   const result = await database.runAsync(
-    'INSERT INTO rules (pattern, label, match_type) VALUES (?, ?, ?)',
-    [pattern, label, matchType]
+    "INSERT INTO rules (pattern, label, match_type) VALUES (?, ?, ?)",
+    [pattern, label, matchType],
   );
   await flushDB();
   return {
@@ -153,28 +164,31 @@ export async function updateRule(
   id: number,
   pattern: string,
   label: string,
-  matchType: MatchType
+  matchType: MatchType,
 ): Promise<void> {
   const database = await getDB();
   await database.runAsync(
-    'UPDATE rules SET pattern = ?, label = ?, match_type = ? WHERE id = ?',
-    [pattern, label, matchType, id]
+    "UPDATE rules SET pattern = ?, label = ?, match_type = ? WHERE id = ?",
+    [pattern, label, matchType, id],
   );
   await flushDB();
 }
 
-export async function updateRuleActive(id: number, isActive: boolean): Promise<void> {
+export async function updateRuleActive(
+  id: number,
+  isActive: boolean,
+): Promise<void> {
   const database = await getDB();
-  await database.runAsync(
-    'UPDATE rules SET is_active = ? WHERE id = ?',
-    [isActive ? 1 : 0, id]
-  );
+  await database.runAsync("UPDATE rules SET is_active = ? WHERE id = ?", [
+    isActive ? 1 : 0,
+    id,
+  ]);
   await flushDB();
 }
 
 export async function deleteRule(id: number): Promise<void> {
   const database = await getDB();
-  await database.runAsync('DELETE FROM rules WHERE id = ?', [id]);
+  await database.runAsync("DELETE FROM rules WHERE id = ?", [id]);
   await flushDB();
 }
 
@@ -182,16 +196,18 @@ export async function deleteRule(id: number): Promise<void> {
 
 export async function logBlockedCall(
   phoneNumber: string,
-  matchedRuleId: number
+  matchedRuleId: number,
 ): Promise<void> {
   const database = await getDB();
   await database.runAsync(
-    'INSERT INTO blocked_calls (phone_number, matched_rule_id) VALUES (?, ?)',
-    [phoneNumber, matchedRuleId]
+    "INSERT INTO blocked_calls (phone_number, matched_rule_id) VALUES (?, ?)",
+    [phoneNumber, matchedRuleId],
   );
 }
 
-export async function getBlockedCalls(limit: number = 50): Promise<BlockedCall[]> {
+export async function getBlockedCalls(
+  limit: number = 50,
+): Promise<BlockedCall[]> {
   const database = await getDB();
   return database.getAllAsync<BlockedCall>(
     `SELECT bc.*, r.pattern as matched_pattern
@@ -199,19 +215,26 @@ export async function getBlockedCalls(limit: number = 50): Promise<BlockedCall[]
      LEFT JOIN rules r ON bc.matched_rule_id = r.id
      ORDER BY bc.blocked_at DESC
      LIMIT ?`,
-    [limit]
+    [limit],
   );
 }
 
-export async function getRecentBlockedCalls(limit: number = 5): Promise<BlockedCall[]> {
+export async function getRecentBlockedCalls(
+  limit: number = 5,
+): Promise<BlockedCall[]> {
   return getBlockedCalls(limit);
 }
 
 // Returns a map of ruleId -> number of calls that rule has blocked
-export async function getBlockedCountsByRule(): Promise<Record<number, number>> {
+export async function getBlockedCountsByRule(): Promise<
+  Record<number, number>
+> {
   const database = await getDB();
-  const rows = await database.getAllAsync<{ matched_rule_id: number; count: number }>(
-    'SELECT matched_rule_id, COUNT(*) as count FROM blocked_calls WHERE matched_rule_id IS NOT NULL GROUP BY matched_rule_id'
+  const rows = await database.getAllAsync<{
+    matched_rule_id: number;
+    count: number;
+  }>(
+    "SELECT matched_rule_id, COUNT(*) as count FROM blocked_calls WHERE matched_rule_id IS NOT NULL GROUP BY matched_rule_id",
   );
   const map: Record<number, number> = {};
   for (const row of rows) {
@@ -226,21 +249,21 @@ export async function getStats(): Promise<Stats> {
   const database = await getDB();
 
   const total = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM blocked_calls'
+    "SELECT COUNT(*) as count FROM blocked_calls",
   );
 
   const today = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM blocked_calls
-     WHERE date(blocked_at) = date('now')`
+     WHERE date(blocked_at) = date('now')`,
   );
 
   const week = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM blocked_calls
-     WHERE blocked_at >= datetime('now', '-7 days')`
+     WHERE blocked_at >= datetime('now', '-7 days')`,
   );
 
   const activeRules = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM rules WHERE is_active = 1'
+    "SELECT COUNT(*) as count FROM rules WHERE is_active = 1",
   );
 
   return {
@@ -265,17 +288,20 @@ export async function clearAllData(): Promise<void> {
 // ==================== HELPERS ====================
 
 /** Get a human-readable description for a rule */
-export function getRuleDescription(pattern: string, matchType: MatchType): string {
+export function getRuleDescription(
+  pattern: string,
+  matchType: MatchType,
+): string {
   switch (matchType) {
-    case 'exact':
+    case "exact":
       return `Blocks calls from ${pattern}`;
-    case 'starts_with':
+    case "starts_with":
       return `Blocks numbers starting with ${pattern}`;
-    case 'ends_with':
+    case "ends_with":
       return `Blocks numbers ending with ${pattern}`;
-    case 'contains':
+    case "contains":
       return `Blocks numbers containing ${pattern}`;
-    case 'regex':
+    case "regex":
       return `Regex pattern: ${pattern}`;
     default:
       return `Pattern: ${pattern}`;

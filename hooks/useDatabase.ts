@@ -1,23 +1,23 @@
 // React hooks that wrap all the database queries.
 // Each hook manages its own loading state and exposes a refresh() for manual re-fetching.
 
-import { useState, useEffect, useCallback } from 'react';
 import {
-  Rule,
   BlockedCall,
-  Stats,
   MatchType,
-  getRules,
-  getRuleById as dbGetRuleById,
+  Rule,
+  Stats,
   addRule as dbAddRule,
-  updateRule as dbUpdateRule,
-  updateRuleActive as dbUpdateRuleActive,
   deleteRule as dbDeleteRule,
   getBlockedCalls as dbGetBlockedCalls,
-  getRecentBlockedCalls as dbGetRecentBlockedCalls,
-  getStats as dbGetStats,
   getBlockedCountsByRule as dbGetBlockedCountsByRule,
-} from '@/database/db';
+  getRecentBlockedCalls as dbGetRecentBlockedCalls,
+  getRuleById as dbGetRuleById,
+  getStats as dbGetStats,
+  updateRule as dbUpdateRule,
+  updateRuleActive as dbUpdateRuleActive,
+  getRules,
+} from "@/database/db";
+import { useCallback, useEffect, useState } from "react";
 
 export function useRules() {
   const [rules, setRules] = useState<Rule[]>([]);
@@ -28,7 +28,7 @@ export function useRules() {
       const data = await getRules();
       setRules(data);
     } catch (error) {
-      if (__DEV__) console.error('Failed to load rules:', error);
+      if (__DEV__) console.error("Failed to load rules:", error);
     } finally {
       setLoading(false);
     }
@@ -38,43 +38,59 @@ export function useRules() {
     refresh();
   }, [refresh]);
 
-  const addRule = useCallback(async (
-    pattern: string,
-    label: string,
-    matchType: MatchType = 'starts_with'
-  ) => {
-    const newRule = await dbAddRule(pattern, label, matchType);
-    setRules(prev => [newRule, ...prev]);
-    return newRule;
-  }, []);
+  const addRule = useCallback(
+    async (
+      pattern: string,
+      label: string,
+      matchType: MatchType = "starts_with",
+    ) => {
+      const newRule = await dbAddRule(pattern, label, matchType);
+      setRules((prev) => [newRule, ...prev]);
+      return newRule;
+    },
+    [],
+  );
 
-  const updateRule = useCallback(async (
-    id: number,
-    pattern: string,
-    label: string,
-    matchType: MatchType
-  ) => {
-    await dbUpdateRule(id, pattern, label, matchType);
-    setRules(prev =>
-      prev.map(r =>
-        r.id === id ? { ...r, pattern, label, match_type: matchType } : r
-      )
-    );
-  }, []);
+  const updateRule = useCallback(
+    async (
+      id: number,
+      pattern: string,
+      label: string,
+      matchType: MatchType,
+    ) => {
+      await dbUpdateRule(id, pattern, label, matchType);
+      setRules((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, pattern, label, match_type: matchType } : r,
+        ),
+      );
+    },
+    [],
+  );
 
   const toggleRule = useCallback(async (id: number, isActive: boolean) => {
     await dbUpdateRuleActive(id, isActive);
-    setRules(prev =>
-      prev.map(r => (r.id === id ? { ...r, is_active: isActive ? 1 : 0 } : r))
+    setRules((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, is_active: isActive ? 1 : 0 } : r,
+      ),
     );
   }, []);
 
   const removeRule = useCallback(async (id: number) => {
     await dbDeleteRule(id);
-    setRules(prev => prev.filter(r => r.id !== id));
+    setRules((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
-  return { rules, loading, refresh, addRule, updateRule, toggleRule, removeRule };
+  return {
+    rules,
+    loading,
+    refresh,
+    addRule,
+    updateRule,
+    toggleRule,
+    removeRule,
+  };
 }
 
 export function useBlockedCalls(limit: number = 50) {
@@ -86,7 +102,7 @@ export function useBlockedCalls(limit: number = 50) {
       const data = await dbGetBlockedCalls(limit);
       setCalls(data);
     } catch (error) {
-      if (__DEV__) console.error('Failed to load blocked calls:', error);
+      if (__DEV__) console.error("Failed to load blocked calls:", error);
     } finally {
       setLoading(false);
     }
@@ -108,7 +124,7 @@ export function useRecentBlocks() {
       const data = await dbGetRecentBlockedCalls(5);
       setCalls(data);
     } catch (error) {
-      if (__DEV__) console.error('Failed to load recent blocks:', error);
+      if (__DEV__) console.error("Failed to load recent blocks:", error);
     } finally {
       setLoading(false);
     }
@@ -135,7 +151,7 @@ export function useStats() {
       const data = await dbGetStats();
       setStats(data);
     } catch (error) {
-      if (__DEV__) console.error('Failed to load stats:', error);
+      if (__DEV__) console.error("Failed to load stats:", error);
     } finally {
       setLoading(false);
     }
@@ -156,7 +172,7 @@ export function useRuleBlockedCounts() {
       const data = await dbGetBlockedCountsByRule();
       setCounts(data);
     } catch (error) {
-      if (__DEV__) console.error('Failed to load blocked counts:', error);
+      if (__DEV__) console.error("Failed to load blocked counts:", error);
     }
   }, []);
 

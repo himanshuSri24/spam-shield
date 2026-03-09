@@ -1,9 +1,16 @@
-import React, { useRef } from 'react';
-import { Animated, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { FontFamily } from '@/constants/fonts';
-import { MatchType, getRuleDescription } from '@/database/db';
+import { FontFamily } from "@/constants/fonts";
+import { BorderRadius, Colors, Spacing } from "@/constants/theme";
+import { MatchType } from "@/database/db";
+import React, { useRef } from "react";
+import {
+  Animated,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 
 interface RuleCardProps {
   id: number;
@@ -18,11 +25,11 @@ interface RuleCardProps {
 }
 
 const MATCH_TYPE_LABELS: Record<MatchType, string> = {
-  exact: 'Exact',
-  starts_with: 'Starts with',
-  ends_with: 'Ends with',
-  contains: 'Contains',
-  regex: 'Regex',
+  exact: "Exact",
+  starts_with: "Starts with",
+  ends_with: "Ends with",
+  contains: "Contains",
+  regex: "Regex",
 };
 
 export function RuleCard({
@@ -45,12 +52,12 @@ export function RuleCard({
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>
+    dragX: Animated.AnimatedInterpolation<number>,
   ) => {
     const translateX = dragX.interpolate({
       inputRange: [-80, 0],
       outputRange: [0, 80],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const opacity = progress.interpolate({
@@ -60,14 +67,13 @@ export function RuleCard({
 
     return (
       <Animated.View
-        style={[
-          styles.deleteAction,
-          { transform: [{ translateX }], opacity },
-        ]}>
+        style={[styles.deleteAction, { transform: [{ translateX }], opacity }]}
+      >
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={handleDelete}
-          activeOpacity={0.8}>
+          activeOpacity={0.8}
+        >
           <Text style={styles.deleteText}>Delete</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -80,29 +86,53 @@ export function RuleCard({
       renderRightActions={renderRightActions}
       rightThreshold={40}
       overshootRight={false}
-      friction={2}>
+      friction={2}
+    >
       <TouchableOpacity
         style={[styles.card, !isActive && styles.cardInactive]}
         onPress={onEdit}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <View style={styles.left}>
           <View style={styles.topRow}>
-            <View style={[styles.matchTypeBadge, !isActive && styles.matchTypeBadgeInactive]}>
-              <Text style={[styles.matchTypeText, !isActive && styles.matchTypeTextInactive]}>
+            <View
+              style={[
+                styles.matchTypeBadge,
+                !isActive && styles.matchTypeBadgeInactive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.matchTypeText,
+                  !isActive && styles.matchTypeTextInactive,
+                ]}
+              >
                 {MATCH_TYPE_LABELS[matchType] ?? matchType}
               </Text>
             </View>
           </View>
-          <View style={[styles.patternBadge, !isActive && styles.patternBadgeInactive]}>
-            <Text style={[styles.patternText, !isActive && styles.patternTextInactive]}>
+          <View
+            style={[
+              styles.patternBadge,
+              !isActive && styles.patternBadgeInactive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.patternText,
+                !isActive && styles.patternTextInactive,
+              ]}
+            >
               {pattern}
             </Text>
           </View>
           {label ? (
-            <Text style={[styles.label, !isActive && styles.labelInactive]}>{label}</Text>
+            <Text style={[styles.label, !isActive && styles.labelInactive]}>
+              {label}
+            </Text>
           ) : null}
           <Text style={styles.blockedCount}>
-            {blockedCount} call{blockedCount !== 1 ? 's' : ''} blocked
+            {blockedCount} call{blockedCount !== 1 ? "s" : ""} blocked
           </Text>
         </View>
         <Switch
@@ -119,9 +149,9 @@ export function RuleCard({
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: Colors.cardBg,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
@@ -137,9 +167,9 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
   matchTypeBadge: {
@@ -156,13 +186,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.sage,
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   matchTypeTextInactive: {
     color: Colors.textMuted,
   },
   patternBadge: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     backgroundColor: Colors.coralPale,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
@@ -197,8 +227,8 @@ const styles = StyleSheet.create({
   },
   // Swipe delete action
   deleteAction: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: Spacing.md,
     marginLeft: -Spacing.sm,
   },
@@ -206,9 +236,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.lg,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
     minWidth: 72,
   },
   deleteText: {

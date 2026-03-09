@@ -1,18 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { FontFamily } from '@/constants/fonts';
-import { StatCard } from '@/components/StatCard';
-import { BlockedCallItem } from '@/components/BlockedCallItem';
-import { useStats, useRecentBlocks } from '@/hooks/useDatabase';
-import { flushDB, drainPendingBlockedCalls } from '@/database/db';
+import { BlockedCallItem } from "@/components/BlockedCallItem";
+import { StatCard } from "@/components/StatCard";
+import { FontFamily } from "@/constants/fonts";
+import { BorderRadius, Colors, Spacing } from "@/constants/theme";
+import { drainPendingBlockedCalls, flushDB } from "@/database/db";
+import { useRecentBlocks, useStats } from "@/hooks/useDatabase";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  requestScreeningRole,
+  ActivityIndicator,
+  AppState,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
   isScreeningEnabled,
   openScreeningSettings,
-} from '../../modules/call-screener';
+  requestScreeningRole,
+} from "../../modules/call-screener";
 
 function formatTimestamp(dateStr: string): string {
   const date = new Date(dateStr);
@@ -22,10 +30,10 @@ function formatTimestamp(dateStr: string): string {
   const diffHrs = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return "Just now";
   if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHrs < 24) return `${diffHrs} hr${diffHrs > 1 ? 's' : ''} ago`;
-  if (diffDays === 1) return 'Yesterday';
+  if (diffHrs < 24) return `${diffHrs} hr${diffHrs > 1 ? "s" : ""} ago`;
+  if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
   return date.toLocaleDateString();
 }
@@ -41,8 +49,8 @@ export default function DashboardScreen() {
 
   // When user returns from system dialog, check role status
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active' && waitingForRole.current) {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && waitingForRole.current) {
         waitingForRole.current = false;
         setEnablingScreening(false);
         isScreeningEnabled()
@@ -55,26 +63,28 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      drainPendingBlockedCalls().then((count) => {
-        if (count > 0) {
-          refreshStats();
-          refreshRecent();
-        }
-      }).catch(() => {});
+      drainPendingBlockedCalls()
+        .then((count) => {
+          if (count > 0) {
+            refreshStats();
+            refreshRecent();
+          }
+        })
+        .catch(() => {});
       refreshStats();
       refreshRecent();
       flushDB().catch(() => {});
       isScreeningEnabled()
         .then((enabled) => setScreeningActive(enabled))
         .catch(() => {});
-    }, [refreshStats, refreshRecent])
+    }, [refreshStats, refreshRecent]),
   );
 
   const handleEnableScreening = async () => {
     setEnablingScreening(true);
     try {
       const result = await requestScreeningRole();
-      if (result === 'already_active') {
+      if (result === "already_active") {
         setScreeningActive(true);
         setEnablingScreening(false);
         return;
@@ -82,7 +92,9 @@ export default function DashboardScreen() {
       // System dialog opened — AppState listener will handle the result
       waitingForRole.current = true;
     } catch {
-      try { await openScreeningSettings(); } catch {}
+      try {
+        await openScreeningSettings();
+      } catch {}
       waitingForRole.current = true;
     }
   };
@@ -90,18 +102,22 @@ export default function DashboardScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.lg }]}
-      showsVerticalScrollIndicator={false}>
-
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + Spacing.lg },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ width: 36 }} />
           <Text style={styles.appName}>Hang Up</Text>
           <TouchableOpacity
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push("/settings")}
             style={styles.settingsButton}
-            activeOpacity={0.7}>
+            activeOpacity={0.7}
+          >
             <Text style={styles.settingsIcon}>⚙</Text>
           </TouchableOpacity>
         </View>
@@ -115,7 +131,8 @@ export default function DashboardScreen() {
             style={styles.warningBanner}
             onPress={handleEnableScreening}
             disabled={enablingScreening}
-            activeOpacity={0.8}>
+            activeOpacity={0.8}
+          >
             {enablingScreening ? (
               <>
                 <ActivityIndicator size="small" color="#92400E" />
@@ -154,16 +171,10 @@ export default function DashboardScreen() {
         </View>
         <View style={styles.statRow}>
           <View style={styles.statHalf}>
-            <StatCard
-              value={stats.blockedToday}
-              label="Today"
-            />
+            <StatCard value={stats.blockedToday} label="Today" />
           </View>
           <View style={styles.statHalf}>
-            <StatCard
-              value={stats.activeRules}
-              label="Active Rules"
-            />
+            <StatCard value={stats.activeRules} label="Active Rules" />
           </View>
         </View>
       </View>
@@ -179,7 +190,7 @@ export default function DashboardScreen() {
               <BlockedCallItem
                 key={block.id}
                 phoneNumber={block.phone_number}
-                matchedPattern={block.matched_pattern ?? 'Unknown rule'}
+                matchedPattern={block.matched_pattern ?? "Unknown rule"}
                 timestamp={formatTimestamp(block.blocked_at)}
               />
             ))}
@@ -202,20 +213,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Spacing.lg,
   },
   headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
   },
   settingsButton: {
     width: 36,
     height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   settingsIcon: {
     fontSize: 22,
@@ -234,8 +245,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.xxl,
     paddingHorizontal: Spacing.huge,
   },
@@ -257,7 +268,7 @@ const styles = StyleSheet.create({
     // Full width
   },
   statRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   statHalf: {
@@ -267,9 +278,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.md,
   },
   sectionTitle: {
@@ -282,27 +293,27 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   warningBanner: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     padding: Spacing.md,
     marginBottom: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   warningText: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 13,
-    color: '#92400E',
-    textAlign: 'center',
+    color: "#92400E",
+    textAlign: "center",
   },
   warningAction: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 13,
-    color: '#D97706',
+    color: "#D97706",
     marginTop: Spacing.xs,
   },
 });

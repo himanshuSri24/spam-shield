@@ -1,16 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Alert, AppState, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { FontFamily } from '@/constants/fonts';
-import { clearAllData } from '@/database/db';
+import { FontFamily } from "@/constants/fonts";
+import { BorderRadius, Colors, Spacing } from "@/constants/theme";
+import { clearAllData } from "@/database/db";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  requestScreeningRole,
+  ActivityIndicator,
+  Alert,
+  AppState,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
   isScreeningEnabled as checkScreeningEnabled,
   getServiceStatus as checkServiceStatus,
   openScreeningSettings,
-} from '../modules/call-screener';
+  requestScreeningRole,
+} from "../modules/call-screener";
 
 interface FAQItem {
   question: string;
@@ -19,32 +30,39 @@ interface FAQItem {
 
 const FAQ_ITEMS: FAQItem[] = [
   {
-    question: 'How does call blocking work?',
-    answer: 'When a call comes in, Android passes it through Hang Up before your phone rings. Hang Up checks the number against your rules and silently rejects matching calls. They never ring.',
+    question: "How does call blocking work?",
+    answer:
+      "When a call comes in, Android passes it through Hang Up before your phone rings. Hang Up checks the number against your rules and silently rejects matching calls. They never ring.",
   },
   {
-    question: 'Why do I need to set Hang Up as default?',
-    answer: 'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure - only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
+    question: "Why do I need to set Hang Up as default?",
+    answer:
+      'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure - only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
   },
   {
-    question: 'Does it block saved contacts?',
-    answer: 'Android does not pass calls from your saved contacts through the call screening service. This means Hang Up cannot block numbers in your contacts - it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.',
+    question: "Does it block saved contacts?",
+    answer:
+      "Android does not pass calls from your saved contacts through the call screening service. This means Hang Up cannot block numbers in your contacts - it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.",
   },
   {
-    question: 'What are match types?',
-    answer: '"Exact" blocks a specific number. "Starts with" blocks numbers beginning with certain digits. "Ends with" blocks numbers ending with certain digits. "Contains" blocks numbers with certain digits anywhere. "Regex" is for advanced pattern matching.',
+    question: "What are match types?",
+    answer:
+      '"Exact" blocks a specific number. "Starts with" blocks numbers beginning with certain digits. "Ends with" blocks numbers ending with certain digits. "Contains" blocks numbers with certain digits anywhere. "Regex" is for advanced pattern matching.',
   },
   {
-    question: 'How do I block international spam?',
-    answer: 'Use "Starts with" and include the country code. For example, to block Indian telemarketers starting with 140, use "+91140" as "Starts with". To block all calls from a country code, use that code as "Starts with" (e.g., "+234" for Nigeria).',
+    question: "How do I block international spam?",
+    answer:
+      'Use "Starts with" and include the country code. For example, to block Indian telemarketers starting with 140, use "+91140" as "Starts with". To block all calls from a country code, use that code as "Starts with" (e.g., "+234" for Nigeria).',
   },
   {
-    question: 'Will this block legitimate calls?',
-    answer: 'Only calls matching your rules will be blocked. Be careful with broad patterns. You can always check blocked calls in the History tab and adjust your rules.',
+    question: "Will this block legitimate calls?",
+    answer:
+      "Only calls matching your rules will be blocked. Be careful with broad patterns. You can always check blocked calls in the History tab and adjust your rules.",
   },
   {
-    question: 'Does Hang Up use the internet?',
-    answer: 'No. Hang Up works 100% offline on your device. No data is ever sent anywhere. Your rules and call history stay on your phone.',
+    question: "Does Hang Up use the internet?",
+    answer:
+      "No. Hang Up works 100% offline on your device. No data is ever sent anywhere. Your rules and call history stay on your phone.",
   },
 ];
 
@@ -52,7 +70,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [screeningEnabled, setScreeningEnabled] = useState(false);
-  const [serviceStatus, setServiceStatus] = useState<string>('checking...');
+  const [serviceStatus, setServiceStatus] = useState<string>("checking...");
   const [isRequesting, setIsRequesting] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
   const waitingForRole = useRef(false);
@@ -63,8 +81,8 @@ export default function SettingsScreen() {
 
   // When user returns from system dialog, recheck status
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active' && waitingForRole.current) {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && waitingForRole.current) {
         waitingForRole.current = false;
         setIsRequesting(false);
         checkStatus();
@@ -80,7 +98,7 @@ export default function SettingsScreen() {
       const enabled = await checkScreeningEnabled();
       setScreeningEnabled(enabled);
     } catch {
-      setServiceStatus('unavailable');
+      setServiceStatus("unavailable");
     }
   };
 
@@ -90,26 +108,28 @@ export default function SettingsScreen() {
         setIsRequesting(true);
         const result = await requestScreeningRole();
 
-        if (result === 'already_active') {
+        if (result === "already_active") {
           setScreeningEnabled(true);
-          setServiceStatus('active');
+          setServiceStatus("active");
           setIsRequesting(false);
         } else {
           // System dialog opened — AppState listener will handle the result
           waitingForRole.current = true;
         }
       } catch {
-        try { await openScreeningSettings(); } catch {}
+        try {
+          await openScreeningSettings();
+        } catch {}
         waitingForRole.current = true;
       }
     } else {
       Alert.alert(
-        'Disable Screening',
-        'To disable call screening, choose a different app in the system settings.',
+        "Disable Screening",
+        "To disable call screening, choose a different app in the system settings.",
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: "Cancel", style: "cancel" },
           {
-            text: 'Open Settings',
+            text: "Open Settings",
             onPress: async () => {
               try {
                 await openScreeningSettings();
@@ -117,7 +137,7 @@ export default function SettingsScreen() {
               } catch {}
             },
           },
-        ]
+        ],
       );
     }
   };
@@ -130,7 +150,10 @@ export default function SettingsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
@@ -142,8 +165,8 @@ export default function SettingsScreen() {
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentInner}
-        showsVerticalScrollIndicator={false}>
-
+        showsVerticalScrollIndicator={false}
+      >
         {/* Call Screening Section */}
         <Text style={styles.sectionTitle}>CALL SCREENING</Text>
         <View style={styles.card}>
@@ -157,12 +180,15 @@ export default function SettingsScreen() {
               <Switch
                 value={screeningEnabled}
                 onValueChange={handleToggleScreening}
-                trackColor={{ false: Colors.borderDark, true: Colors.coralPale }}
+                trackColor={{
+                  false: Colors.borderDark,
+                  true: Colors.coralPale,
+                }}
                 thumbColor={screeningEnabled ? Colors.coral : Colors.textLight}
               />
             )}
           </View>
-          {!screeningEnabled && serviceStatus !== 'Requires dev build' && (
+          {!screeningEnabled && serviceStatus !== "Requires dev build" && (
             <Text style={styles.enableHint}>
               Enable to start blocking unwanted calls
             </Text>
@@ -178,10 +204,11 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 style={styles.faqRow}
                 onPress={() => toggleFAQ(index)}
-                activeOpacity={0.7}>
+                activeOpacity={0.7}
+              >
                 <Text style={styles.faqQuestion}>{item.question}</Text>
                 <Text style={styles.faqArrow}>
-                  {expandedFAQ === index ? '▲' : '▼'}
+                  {expandedFAQ === index ? "▲" : "▼"}
                 </Text>
               </TouchableOpacity>
               {expandedFAQ === index && (
@@ -206,7 +233,9 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
             <Text style={styles.aboutLabel}>Data Collection</Text>
-            <Text style={[styles.aboutValue, { color: Colors.success }]}>None</Text>
+            <Text style={[styles.aboutValue, { color: Colors.success }]}>
+              None
+            </Text>
           </View>
         </View>
 
@@ -214,8 +243,8 @@ export default function SettingsScreen() {
         <View style={styles.privacyCard}>
           <Text style={styles.privacyTitle}>Privacy First</Text>
           <Text style={styles.privacyText}>
-            Hang Up works entirely on your device. No data is ever sent to any server.
-            Your blocking rules and call history never leave your phone.
+            Hang Up works entirely on your device. No data is ever sent to any
+            server. Your blocking rules and call history never leave your phone.
           </Text>
         </View>
 
@@ -225,21 +254,22 @@ export default function SettingsScreen() {
           style={styles.dangerButton}
           onPress={() => {
             Alert.alert(
-              'Clear All Data',
-              'This will delete all rules and blocked call history. This cannot be undone.',
+              "Clear All Data",
+              "This will delete all rules and blocked call history. This cannot be undone.",
               [
-                { text: 'Cancel', style: 'cancel' },
+                { text: "Cancel", style: "cancel" },
                 {
-                  text: 'Clear',
-                  style: 'destructive',
+                  text: "Clear",
+                  style: "destructive",
                   onPress: async () => {
                     await clearAllData();
-                    Alert.alert('Done', 'All data has been cleared.');
+                    Alert.alert("Done", "All data has been cleared.");
                   },
                 },
-              ]
+              ],
             );
-          }}>
+          }}
+        >
           <Text style={styles.dangerButtonText}>Clear All Data</Text>
         </TouchableOpacity>
 
@@ -249,14 +279,18 @@ export default function SettingsScreen() {
           <View style={styles.madeByLinks}>
             <TouchableOpacity
               style={styles.madeByLink}
-              onPress={() => Linking.openURL('https://buymeacoffee.com/devwithcoffee')}
-              activeOpacity={0.7}>
+              onPress={() =>
+                Linking.openURL("https://buymeacoffee.com/devwithcoffee")
+              }
+              activeOpacity={0.7}
+            >
               <Text style={styles.madeByLinkText}>Buy Me a Coffee</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.madeByLink}
-              onPress={() => Linking.openURL('https://devwithcoffee.com')}
-              activeOpacity={0.7}>
+              onPress={() => Linking.openURL("https://devwithcoffee.com")}
+              activeOpacity={0.7}
+            >
               <Text style={styles.madeByLinkText}>devwithcoffee.com</Text>
             </TouchableOpacity>
           </View>
@@ -272,9 +306,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cream,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
@@ -325,9 +359,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,
   },
   settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   settingInfo: {
     flex: 1,
@@ -343,13 +377,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.coral,
     marginTop: Spacing.sm,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   // FAQ
   faqRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Spacing.sm,
   },
   faqQuestion: {
@@ -373,9 +407,9 @@ const styles = StyleSheet.create({
   },
   // About
   aboutRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Spacing.sm,
   },
   aboutLabel: {
@@ -419,7 +453,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.coralPale,
     padding: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Spacing.xxl,
   },
   dangerButtonText: {
@@ -428,7 +462,7 @@ const styles = StyleSheet.create({
     color: Colors.coral,
   },
   madeByCard: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: Spacing.xl,
     marginBottom: Spacing.xxl,
   },
@@ -439,12 +473,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   madeByLinks: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   madeByLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.cardBg,
     borderWidth: 1,
     borderColor: Colors.border,

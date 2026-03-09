@@ -1,5 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { FontFamily } from "@/constants/fonts";
+import { BorderRadius, Colors, Spacing } from "@/constants/theme";
 import {
+  addRule as dbAddRule,
+  updateRule as dbUpdateRule,
+  getRuleById,
+  getRuleDescription,
+  MatchType,
+} from "@/database/db";
+import * as Localization from "expo-localization";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -8,36 +21,58 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { FontFamily } from '@/constants/fonts';
-import {
-  addRule as dbAddRule,
-  updateRule as dbUpdateRule,
-  getRuleById,
-  MatchType,
-  getRuleDescription,
-} from '@/database/db';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import * as Localization from 'expo-localization';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MATCH_TYPES: { type: MatchType; label: string; hint: string }[] = [
-  { type: 'exact', label: 'Exact Number', hint: 'Blocks this exact number only' },
-  { type: 'starts_with', label: 'Starts With', hint: 'Blocks numbers starting with these digits' },
-  { type: 'ends_with', label: 'Ends With', hint: 'Blocks numbers ending with these digits' },
-  { type: 'contains', label: 'Contains', hint: 'Blocks numbers containing these digits' },
-  { type: 'regex', label: 'Regex', hint: 'Advanced: blocks numbers matching a regular expression' },
+  {
+    type: "exact",
+    label: "Exact Number",
+    hint: "Blocks this exact number only",
+  },
+  {
+    type: "starts_with",
+    label: "Starts With",
+    hint: "Blocks numbers starting with these digits",
+  },
+  {
+    type: "ends_with",
+    label: "Ends With",
+    hint: "Blocks numbers ending with these digits",
+  },
+  {
+    type: "contains",
+    label: "Contains",
+    hint: "Blocks numbers containing these digits",
+  },
+  {
+    type: "regex",
+    label: "Regex",
+    hint: "Advanced: blocks numbers matching a regular expression",
+  },
 ];
 
 const PRESETS = [
-  { pattern: '140', matchType: 'starts_with' as MatchType, label: 'Telemarketers (140)' },
-  { pattern: '1800', matchType: 'starts_with' as MatchType, label: 'Toll-free spam' },
-  { pattern: '120', matchType: 'starts_with' as MatchType, label: 'Service calls (120)' },
-  { pattern: '160', matchType: 'starts_with' as MatchType, label: 'Marketing (160)' },
-  { pattern: '180', matchType: 'starts_with' as MatchType, label: 'Toll-free (180)' },
+  {
+    pattern: "+91140",
+    matchType: "starts_with" as MatchType,
+    label: "Telemarketers (+91140)",
+  },
+  {
+    pattern: "+911800",
+    matchType: "starts_with" as MatchType,
+    label: "Toll-free spam (+911800)",
+  },
+  {
+    pattern: "+91120",
+    matchType: "starts_with" as MatchType,
+    label: "Service calls (+91120)",
+  },
+  {
+    pattern: "+91160",
+    matchType: "starts_with" as MatchType,
+    label: "Marketing (+91160)",
+  },
 ];
 
 export default function AddRuleScreen() {
@@ -48,9 +83,9 @@ export default function AddRuleScreen() {
   const isEditing = !!params.ruleId;
   const editId = params.ruleId ? parseInt(params.ruleId, 10) : null;
 
-  const [pattern, setPattern] = useState('');
-  const [label, setLabel] = useState('');
-  const [matchType, setMatchType] = useState<MatchType>('starts_with');
+  const [pattern, setPattern] = useState("");
+  const [label, setLabel] = useState("");
+  const [matchType, setMatchType] = useState<MatchType>("starts_with");
   const [loadingRule, setLoadingRule] = useState(isEditing);
 
   // Load existing rule data when editing
@@ -65,7 +100,7 @@ export default function AddRuleScreen() {
             setMatchType(rule.match_type);
           }
         } catch (e) {
-          if (__DEV__) console.error('Failed to load rule for editing:', e);
+          if (__DEV__) console.error("Failed to load rule for editing:", e);
         } finally {
           setLoadingRule(false);
         }
@@ -74,11 +109,11 @@ export default function AddRuleScreen() {
   }, [editId]);
 
   const previewDescription = useMemo(() => {
-    if (!pattern.trim()) return '';
+    if (!pattern.trim()) return "";
     return getRuleDescription(pattern.trim(), matchType);
   }, [pattern, matchType]);
 
-  const handlePresetSelect = (preset: typeof PRESETS[number]) => {
+  const handlePresetSelect = (preset: (typeof PRESETS)[number]) => {
     setPattern(preset.pattern);
     setLabel(preset.label);
     setMatchType(preset.matchType);
@@ -88,20 +123,26 @@ export default function AddRuleScreen() {
     if (!isValid) return;
     try {
       let cleanedPattern = pattern.trim();
-      
+
       // For exact match, normalize to E.164 format (+919563123456) so it
       // matches what Android passes to the screening service. If the user
       // types something weird that can't be parsed, just strip formatting.
-      if (matchType === 'exact') {
-         const regionCodes = Localization.getLocales();
-         const defaultRegion = regionCodes.length > 0 && regionCodes[0].regionCode ? regionCodes[0].regionCode : 'IN';
-         // @ts-ignore - libphonenumber types are slightly off
-         const phoneNumber = parsePhoneNumberFromString(cleanedPattern, defaultRegion);
-         if (phoneNumber && phoneNumber.isValid()) {
-             cleanedPattern = phoneNumber.number as string;
-         } else {
-             cleanedPattern = cleanedPattern.replace(/[\s\-\(\)]/g, '');
-         }
+      if (matchType === "exact") {
+        const regionCodes = Localization.getLocales();
+        const defaultRegion =
+          regionCodes.length > 0 && regionCodes[0].regionCode
+            ? regionCodes[0].regionCode
+            : "IN";
+        // @ts-ignore - libphonenumber types are slightly off
+        const phoneNumber = parsePhoneNumberFromString(
+          cleanedPattern,
+          defaultRegion,
+        );
+        if (phoneNumber && phoneNumber.isValid()) {
+          cleanedPattern = phoneNumber.number as string;
+        } else {
+          cleanedPattern = cleanedPattern.replace(/[\s\-\(\)]/g, "");
+        }
       }
 
       const cleanedLabel = label.trim();
@@ -113,8 +154,8 @@ export default function AddRuleScreen() {
       }
       router.back();
     } catch (error) {
-      if (__DEV__) console.error('Failed to save rule:', error);
-      Alert.alert('Error', 'Failed to save rule. Please try again.');
+      if (__DEV__) console.error("Failed to save rule:", error);
+      Alert.alert("Error", "Failed to save rule. Please try again.");
     }
   };
 
@@ -133,20 +174,29 @@ export default function AddRuleScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <View style={[styles.inner, { paddingTop: insets.top + Spacing.md }]}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{isEditing ? 'Edit Rule' : 'New Rule'}</Text>
+          <Text style={styles.title}>
+            {isEditing ? "Edit Rule" : "New Rule"}
+          </Text>
           <TouchableOpacity
             onPress={handleSave}
             disabled={!isValid}
-            style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}>
-            <Text style={[styles.saveText, !isValid && styles.saveTextDisabled]}>
-              {isEditing ? 'Update' : 'Save'}
+            style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
+          >
+            <Text
+              style={[styles.saveText, !isValid && styles.saveTextDisabled]}
+            >
+              {isEditing ? "Update" : "Save"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -157,68 +207,72 @@ export default function AddRuleScreen() {
         <ScrollView
           style={styles.form}
           contentContainerStyle={styles.formContent}
-          showsVerticalScrollIndicator={false}>
-
+          showsVerticalScrollIndicator={false}
+        >
           {/* Match Type Selector */}
           <View style={styles.matchTypeSection}>
-              <Text style={styles.inputLabel}>MATCH TYPE</Text>
-              <View style={styles.matchTypeGrid}>
-                {MATCH_TYPES.map((mt) => (
-                  <TouchableOpacity
-                    key={mt.type}
+            <Text style={styles.inputLabel}>MATCH TYPE</Text>
+            <View style={styles.matchTypeGrid}>
+              {MATCH_TYPES.map((mt) => (
+                <TouchableOpacity
+                  key={mt.type}
+                  style={[
+                    styles.matchTypeCard,
+                    matchType === mt.type && styles.matchTypeCardActive,
+                  ]}
+                  onPress={() => setMatchType(mt.type)}
+                  activeOpacity={0.7}
+                >
+                  <Text
                     style={[
-                      styles.matchTypeCard,
-                      matchType === mt.type && styles.matchTypeCardActive,
+                      styles.matchTypeLabel,
+                      matchType === mt.type && styles.matchTypeLabelActive,
                     ]}
-                    onPress={() => setMatchType(mt.type)}
-                    activeOpacity={0.7}>
-                    <Text
-                      style={[
-                        styles.matchTypeLabel,
-                        matchType === mt.type && styles.matchTypeLabelActive,
-                      ]}>
-                      {mt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {matchType && (
-                <Text style={styles.matchTypeHint}>
-                  {MATCH_TYPES.find(mt => mt.type === matchType)?.hint}
-                </Text>
-              )}
+                  >
+                    {mt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+            {matchType && (
+              <Text style={styles.matchTypeHint}>
+                {MATCH_TYPES.find((mt) => mt.type === matchType)?.hint}
+              </Text>
+            )}
+          </View>
 
           {/* Pattern Input */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>
-              {matchType === 'regex' ? 'REGEX PATTERN' : 'PHONE NUMBER / DIGITS'}
+              {matchType === "regex"
+                ? "REGEX PATTERN"
+                : "PHONE NUMBER / DIGITS"}
             </Text>
             <TextInput
               style={styles.input}
               value={pattern}
               onChangeText={setPattern}
               placeholder={
-                matchType === 'regex'
-                  ? 'e.g. \\+91956[0-9]+'
-                  : matchType === 'exact'
-                  ? 'e.g. +919563123456'
-                  : 'e.g. +919563 or 9563'
+                matchType === "regex"
+                  ? "e.g. \\+91956[0-9]+"
+                  : matchType === "exact"
+                    ? "e.g. +919563123456"
+                    : "e.g. +919563 or 9563"
               }
               placeholderTextColor={Colors.textLight}
               autoFocus={!isEditing}
-              keyboardType={matchType === 'regex' ? 'default' : 'phone-pad'}
+              keyboardType={matchType === "regex" ? "default" : "phone-pad"}
             />
             <Text style={styles.hint}>
-              {matchType === 'regex'
-                ? 'Enter a regular expression pattern. Use this for complex matching rules.'
-                : matchType === 'exact'
-                ? 'Enter the full phone number to block (including country code if needed).'
-                : matchType === 'starts_with'
-                ? 'Enter the digits that blocked numbers should start with. Include + and country code for international numbers.'
-                : matchType === 'ends_with'
-                ? 'Enter the digits that blocked numbers should end with.'
-                : 'Enter digits that appear anywhere in the number.'}
+              {matchType === "regex"
+                ? "Enter a regular expression pattern. Use this for complex matching rules."
+                : matchType === "exact"
+                  ? "Enter the full phone number to block (including country code if needed)."
+                  : matchType === "starts_with"
+                    ? "Enter the digits that blocked numbers should start with. Include + and country code for international numbers."
+                    : matchType === "ends_with"
+                      ? "Enter the digits that blocked numbers should end with."
+                      : "Enter digits that appear anywhere in the number."}
             </Text>
           </View>
 
@@ -226,8 +280,10 @@ export default function AddRuleScreen() {
           {previewDescription ? (
             <View style={styles.previewCard}>
               <Text style={styles.previewLabel}>WILL DO</Text>
-              <Text style={styles.previewDescription}>{previewDescription}</Text>
-              {matchType === 'starts_with' && pattern.trim() && (
+              <Text style={styles.previewDescription}>
+                {previewDescription}
+              </Text>
+              {matchType === "starts_with" && pattern.trim() && (
                 <View style={styles.previewExamples}>
                   <Text style={styles.previewExampleLabel}>EXAMPLES</Text>
                   <Text style={styles.previewExample}>
@@ -241,7 +297,7 @@ export default function AddRuleScreen() {
                   </Text>
                 </View>
               )}
-              {matchType === 'ends_with' && pattern.trim() && (
+              {matchType === "ends_with" && pattern.trim() && (
                 <View style={styles.previewExamples}>
                   <Text style={styles.previewExampleLabel}>EXAMPLES</Text>
                   <Text style={styles.previewExample}>
@@ -252,7 +308,7 @@ export default function AddRuleScreen() {
                   </Text>
                 </View>
               )}
-              {matchType === 'contains' && pattern.trim() && (
+              {matchType === "contains" && pattern.trim() && (
                 <View style={styles.previewExamples}>
                   <Text style={styles.previewExampleLabel}>EXAMPLES</Text>
                   <Text style={styles.previewExample}>
@@ -276,7 +332,7 @@ export default function AddRuleScreen() {
           </View>
 
           {/* Preset Patterns (not when editing or using regex) */}
-          {matchType !== 'regex' && !isEditing && (
+          {matchType !== "regex" && !isEditing && (
             <View style={styles.presetsSection}>
               <Text style={styles.presetsTitle}>Quick Presets</Text>
               <View style={styles.presetsList}>
@@ -285,15 +341,21 @@ export default function AddRuleScreen() {
                     key={i}
                     style={[
                       styles.presetChip,
-                      pattern === preset.pattern && matchType === preset.matchType && styles.presetChipActive,
+                      pattern === preset.pattern &&
+                        matchType === preset.matchType &&
+                        styles.presetChipActive,
                     ]}
                     onPress={() => handlePresetSelect(preset)}
-                    activeOpacity={0.7}>
+                    activeOpacity={0.7}
+                  >
                     <Text
                       style={[
                         styles.presetChipText,
-                        pattern === preset.pattern && matchType === preset.matchType && styles.presetChipTextActive,
-                      ]}>
+                        pattern === preset.pattern &&
+                          matchType === preset.matchType &&
+                          styles.presetChipTextActive,
+                      ]}
+                    >
                       {preset.label}
                     </Text>
                   </TouchableOpacity>
@@ -305,7 +367,8 @@ export default function AddRuleScreen() {
           {/* Saved contacts note */}
           <View style={styles.contactsNote}>
             <Text style={styles.contactsNoteText}>
-              Android skips call screening for saved contacts. Rules only apply to unknown callers.
+              Android skips call screening for saved contacts. Rules only apply
+              to unknown callers.
             </Text>
           </View>
         </ScrollView>
@@ -324,8 +387,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontFamily: FontFamily.bodyRegular,
@@ -333,9 +396,9 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.md,
   },
@@ -389,12 +452,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,
   },
   matchTypeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
   },
   matchTypeCard: {
-    width: '48%',
+    width: "48%",
     flexGrow: 1,
     backgroundColor: Colors.cardBg,
     borderWidth: 1,
@@ -402,8 +465,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: Spacing.sm,
   },
   matchTypeCardActive: {
@@ -423,7 +486,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   // Input
   inputGroup: {
@@ -512,8 +575,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   presetsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
   },
   presetChip: {

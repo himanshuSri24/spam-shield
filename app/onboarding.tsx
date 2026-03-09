@@ -3,12 +3,18 @@ import { BorderRadius, Colors, Spacing } from "@/constants/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { AppState, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  AppState,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  requestScreeningRole,
   isScreeningEnabled,
+  requestScreeningRole,
 } from "../modules/call-screener";
 
 const ONBOARDING_KEY = "hangup_onboarding_complete";

@@ -1,4 +1,4 @@
-import CallScreenerModule from './src/CallScreenerModule';
+import CallScreenerModule from "./src/CallScreenerModule";
 
 /**
  * Request the user to set this app as the default call screening app.
