@@ -2,14 +2,14 @@
 
 ## System Context
 
-Hang Up is a **single-device, offline-only Android application**. No servers, no APIs, no cloud.
+Spam Shield is a **single-device, offline-only Android application**. No servers, no APIs, no cloud.
 
 ```
 ┌─────────────────────────────────────────────────┐
 │                 USER'S PHONE                    │
 │                                                 │
 │  ┌──────────────┐     ┌──────────────────────┐  │
-│  │  Android OS  │     │     Hang Up App      │  │
+│  │  Android OS  │     │     Spam Shield App      │  │
 │  │              │     │                      │  │
 │  │  Incoming    │────▶│  CallScreeningService │  │
 │  │  Call Event  │     │  (Kotlin, background) │  │
@@ -68,7 +68,7 @@ The actual call interception happens here. A Kotlin `CallScreeningService` runs 
 │         ▼              │              ▼               │
 │  ┌──────────┐          │      ┌──────────────────┐    │
 │  │  SQLite  │          │      │ SharedPreferences │    │
-│  │  hangup  │          │      │  (HangUpRules)    │    │
+│  │  spamshield  │          │      │  (SpamShieldRules)    │    │
 │  │  .db     │          │      │                   │    │
 │  └──────────┘          │      └──────────────────┘    │
 │                        │              ▲               │
@@ -81,7 +81,7 @@ The actual call interception happens here. A Kotlin `CallScreeningService` runs 
 │  └─────────────────────────────────────────────────┘  │
 │                        │                              │
 │  ┌─────────────────────▼───────────────────────────┐  │
-│  │     HangUpCallScreeningService.kt               │  │
+│  │     SpamShieldCallScreeningService.kt               │  │
 │  │  onScreenCall() → checkAgainstRules()           │  │
 │  │  → allow or reject silently                     │  │
 │  └─────────────────────────────────────────────────┘  │
@@ -94,12 +94,12 @@ The actual call interception happens here. A Kotlin `CallScreeningService` runs 
 
 ### Two Storage Systems
 
-Hang Up uses **SQLite** for the main database and **SharedPreferences** for cross-process communication:
+Spam Shield uses **SQLite** for the main database and **SharedPreferences** for cross-process communication:
 
 | Storage                               | What's in it                                   | Who reads         | Who writes        |
 | ------------------------------------- | ---------------------------------------------- | ----------------- | ----------------- |
-| **SQLite** (`hangup.db`)              | Rules, blocked call history                    | React Native (JS) | React Native (JS) |
-| **SharedPreferences** (`HangUpRules`) | Active rules JSON, pending blocked calls queue | Kotlin service    | Both (see below)  |
+| **SQLite** (`spamshield.db`)              | Rules, blocked call history                    | React Native (JS) | React Native (JS) |
+| **SharedPreferences** (`SpamShieldRules`) | Active rules JSON, pending blocked calls queue | Kotlin service    | Both (see below)  |
 
 ### Why Two Systems?
 

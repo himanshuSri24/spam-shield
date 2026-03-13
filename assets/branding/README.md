@@ -1,4 +1,4 @@
-# Hang Up - Asset Generation Guide
+# Spam Shield - Asset Generation Guide
 #
 # SVG source files are in assets/branding/
 # To generate production PNGs, use one of these methods:

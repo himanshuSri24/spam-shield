@@ -26,7 +26,7 @@ Android Telecom framework
   ├── Is there a default screening app?
   │   └── No → Ring immediately
   │
-  └── Yes → Start HangUpCallScreeningService (separate process)
+  └── Yes → Start SpamShieldCallScreeningService (separate process)
             └── onScreenCall(Call.Details)
                 │
                 ├── Number extracted from Call.Details.handle
@@ -44,7 +44,7 @@ Android Telecom framework
 | Runs in a **separate process**       | Can't access React Native's JS runtime or SQLite directly            |
 | Saved contacts **bypass screening**  | Can't block numbers in the user's contact list                       |
 | Must respond **quickly**             | No long-running operations; reading SharedPreferences is fast        |
-| Only **one** screening app at a time | User must choose between Hang Up and other caller ID apps            |
+| Only **one** screening app at a time | User must choose between Spam Shield and other caller ID apps            |
 | API 29+ required for `RoleManager`   | Older Android can have the service but can't easily request the role |
 
 ---
@@ -60,7 +60,7 @@ Android Telecom framework
 
 <!-- Service registration (injected by withCallScreener plugin) -->
 <service
-    android:name="expo.modules.callscreener.HangUpCallScreeningService"
+    android:name="expo.modules.callscreener.SpamShieldCallScreeningService"
     android:permission="android.permission.BIND_SCREENING_SERVICE"
     android:exported="true">
     <intent-filter>
@@ -94,7 +94,7 @@ Key configurations:
 
 - `minSdkVersion` — from Expo defaults (currently 24)
 - `targetSdkVersion` — from Expo defaults (currently 35)
-- `applicationId` — `com.devwithcoffee.hangup`
+- `applicationId` — `com.devwithcoffee.spamshield`
 - Hermes engine enabled (JavaScript engine that supports React Native's new architecture)
 - ProGuard configured for release builds (`proguard-rules.pro`)
 
@@ -130,7 +130,7 @@ The system dialog shows something like:
 
 ```
 ┌─────────────────────────────────────┐
-│  Set Hang Up as your caller ID     │
+│  Set Spam Shield as your caller ID     │
 │  and spam app?                      │
 │                                     │
 │  This app will be used to identify  │
@@ -151,7 +151,7 @@ SharedPreferences is Android's built-in key-value store. It's file-backed (XML),
 ### Storage layout
 
 ```
-File: /data/data/com.devwithcoffee.hangup/shared_prefs/HangUpRules.xml
+File: /data/data/com.devwithcoffee.spamshield/shared_prefs/SpamShieldRules.xml
 
 Keys:
 ├── "active_rules" (String)
@@ -184,7 +184,7 @@ Keys:
 │                    Android OS                       │
 │                                                     │
 │  ┌─────────────────────────────────────────────┐    │
-│  │ Process 1: com.devwithcoffee.hangup         │    │
+│  │ Process 1: com.devwithcoffee.spamshield         │    │
 │  │                                             │    │
 │  │  ┌─────────────────────────────────┐        │    │
 │  │  │ React Native (JS Thread)       │        │    │
@@ -204,7 +204,7 @@ Keys:
 │  ┌───────────────▼─────────────────────────────┐    │
 │  │ Process 2 (or same, depends on config)      │    │
 │  │                                             │    │
-│  │  HangUpCallScreeningService.kt              │    │
+│  │  SpamShieldCallScreeningService.kt              │    │
 │  │  (Started by Android Telecom on call)       │    │
 │  │                                             │    │
 │  │  Reads: SharedPreferences("active_rules")   │    │
@@ -223,7 +223,7 @@ The service and the app **may** run in the same process or separate processes de
 
 ```kotlin
 AsyncFunction("testMatch") { phoneNumber: String, promise: Promise ->
-    // Same logic as HangUpCallScreeningService.checkAgainstRules()
+    // Same logic as SpamShieldCallScreeningService.checkAgainstRules()
     // But returns a trace of every step for debugging
     // Returns: { blocked: true/false, ruleId, pattern, matchType, trace: [...] }
 }

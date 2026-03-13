@@ -8,17 +8,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * HangUpCallScreeningService - The core of the Hang Up app.
+ * SpamShieldCallScreeningService - The core of the Spam Shield app.
  *
  * Runs as a background service whenever a call comes in.
  * Reads blocking rules from SharedPreferences (synced from JS via the bridge),
  * checks the incoming number against all active rules using proper match_type
  * logic, and silently rejects matching calls without ringing.
  */
-class HangUpCallScreeningService : CallScreeningService() {
+class SpamShieldCallScreeningService : CallScreeningService() {
 
     companion object {
-        private const val TAG = "HangUpScreening"
+        private const val TAG = "SpamShieldScreening"
     }
 
     override fun onScreenCall(callDetails: Call.Details) {
@@ -60,7 +60,7 @@ class HangUpCallScreeningService : CallScreeningService() {
      * from SharedPreferences, using proper match_type logic.
      */
     private fun checkAgainstRules(phoneNumber: String): MatchResult? {
-        val prefs = applicationContext.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+        val prefs = applicationContext.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
         val rulesJson = prefs.getString("active_rules", "[]") ?: "[]"
         val jsonArray = JSONArray(rulesJson)
 
@@ -111,7 +111,7 @@ class HangUpCallScreeningService : CallScreeningService() {
      */
     private fun logBlockedCall(phoneNumber: String, matchedRuleId: Int) {
         try {
-            val prefs = applicationContext.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+            val prefs = applicationContext.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
             val pendingJson = prefs.getString("pending_blocked_calls", "[]") ?: "[]"
             val pendingArray = JSONArray(pendingJson)
 

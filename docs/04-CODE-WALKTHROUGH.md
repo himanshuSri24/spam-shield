@@ -18,7 +18,7 @@ Standard npm project config. Key things:
 
 Expo configuration. Important fields:
 
-- `"scheme": "hangup"` — enables deep links (`hangup://` URL scheme)
+- `"scheme": "spamshield"` — enables deep links (`spamshield://` URL scheme)
 - `"newArchEnabled": true` — uses React Native's new architecture (Fabric + TurboModules)
 - `"plugins"` — Expo plugins that modify the build:
   - `"expo-router"` — file-based routing
@@ -186,7 +186,7 @@ EXAMPLES
 
 **Step 2 — Enable Screening**: Calls `requestScreeningRole()` which opens a system dialog. Since there's no callback when the dialog closes, the code **polls** `isScreeningEnabled()` up to 10 times (1 second apart). If the user grants permission during that window, the UI updates.
 
-**Persistence**: On completion, sets `AsyncStorage('hangup_onboarding_complete', 'true')`. The dashboard would check this to decide whether to redirect to onboarding (though currently the routing relies on Expo Router's initial route).
+**Persistence**: On completion, sets `AsyncStorage('spamshield_onboarding_complete', 'true')`. The dashboard would check this to decide whether to redirect to onboarding (though currently the routing relies on Expo Router's initial route).
 
 **Animation**: Each step uses `FadeInDown.duration(400)` from reanimated for a smooth slide-in.
 
@@ -286,7 +286,7 @@ Implements the `Module()` class from Expo Modules. Each `AsyncFunction` receives
 
 - **`testMatch()`**: Dev-only function. Runs the same matching algorithm as the service and returns a detailed trace of what happened. Useful for debugging "why didn't this number get blocked?"
 
-### `HangUpCallScreeningService.kt` — The Core
+### `SpamShieldCallScreeningService.kt` — The Core
 
 This is the file that actually blocks calls. It extends Android's `CallScreeningService` and implements `onScreenCall()`.
 

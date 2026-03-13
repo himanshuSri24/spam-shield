@@ -1,5 +1,5 @@
 /**
- * Database initialization and CRUD operations for Hang Up.
+ * Database initialization and CRUD operations for Spam Shield.
  * Uses expo-sqlite for completely offline local storage.
  */
 
@@ -41,7 +41,7 @@ let db: SQLite.SQLiteDatabase | null = null;
 
 export async function getDB(): Promise<SQLite.SQLiteDatabase> {
   if (!db) {
-    db = await SQLite.openDatabaseAsync("hangup.db");
+    db = await SQLite.openDatabaseAsync("spamshield.db");
     await initDB(db);
   }
   return db;

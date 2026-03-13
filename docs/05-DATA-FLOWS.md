@@ -59,7 +59,7 @@ Phone receives call from +911401234567
   │
   ▼
 Android checks: Is there a default call screening app?
-  ├── Yes → HangUpCallScreeningService.onScreenCall()
+  ├── Yes → SpamShieldCallScreeningService.onScreenCall()
   └── No  → Phone rings normally
   │
   ▼
@@ -72,7 +72,7 @@ onScreenCall(callDetails)
   │
   ├── checkAgainstRules("+911401234567")
   │   │
-  │   ├── Read SharedPreferences("HangUpRules", "active_rules")
+  │   ├── Read SharedPreferences("SpamShieldRules", "active_rules")
   │   │   = '[{"id":5,"pattern":"+91140","match_type":"starts_with"}]'
   │   │
   │   ├── normalizeNumber("+911401234567") = "+911401234567"
@@ -276,7 +276,7 @@ app/_layout.tsx renders
       │
       └── Dashboard renders
           │
-          ├── useStats() → getDB() → first call → openDatabaseAsync('hangup.db')
+          ├── useStats() → getDB() → first call → openDatabaseAsync('spamshield.db')
           │   └── initDB() → CREATE TABLE IF NOT EXISTS ...
           │   └── Migration check → skip (columns exist)
           │

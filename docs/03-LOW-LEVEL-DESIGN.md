@@ -11,7 +11,7 @@ This document covers the internal implementation details of every module — the
 ```
 getDB() called (first time)
   │
-  ├── openDatabaseAsync('hangup.db')  ← creates/opens the SQLite file
+  ├── openDatabaseAsync('spamshield.db')  ← creates/opens the SQLite file
   │
   ├── initDB(database)
   │   ├── execAsync(CREATE TABLE rules ...)
@@ -145,7 +145,7 @@ app.json
         └── withCallScreener.js (Expo Config Plugin)
               └── Injects into AndroidManifest.xml:
                     <service
-                      android:name="expo.modules.callscreener.HangUpCallScreeningService"
+                      android:name="expo.modules.callscreener.SpamShieldCallScreeningService"
                       android:permission="android.permission.BIND_SCREENING_SERVICE"
                       android:exported="true">
                       <intent-filter>
@@ -174,7 +174,7 @@ Each function is an `AsyncFunction` that receives a `Promise` and resolves/rejec
 | `requestScreeningRole()`   | Uses `RoleManager.createRequestRoleIntent(ROLE_CALL_SCREENING)` to open the system dialog. Returns `"already_active"`, `"requested"`, or `"failed"`. |
 | `isScreeningEnabled()`     | Checks `RoleManager.isRoleHeld(ROLE_CALL_SCREENING)`. Returns `true/false`.                                                                          |
 | `getServiceStatus()`       | Returns `"active"`, `"inactive"`, `"unavailable"`, `"unsupported"`, or `"error"`.                                                                    |
-| `syncRules(rulesJson)`     | Writes the JSON string to `SharedPreferences("HangUpRules", "active_rules")`.                                                                        |
+| `syncRules(rulesJson)`     | Writes the JSON string to `SharedPreferences("SpamShieldRules", "active_rules")`.                                                                        |
 | `getPendingBlockedCalls()` | Reads and clears the `"pending_blocked_calls"` key. Returns JSON array string.                                                                       |
 | `openScreeningSettings()`  | Opens `ACTION_MANAGE_DEFAULT_APPS_SETTINGS` or falls back to `ACTION_SETTINGS`.                                                                      |
 | `testMatch(phoneNumber)`   | Debug-only: runs the matching algorithm and returns a trace of what happened.                                                                        |
@@ -196,7 +196,7 @@ Strips spaces, dashes, and parentheses. Preserves `+` prefix. This is **critical
 
 The same logic exists in JavaScript (test files) to ensure both sides agree.
 
-### HangUpCallScreeningService.kt — Call Interception
+### SpamShieldCallScreeningService.kt — Call Interception
 
 ```
 Android: Incoming call detected
@@ -211,7 +211,7 @@ onScreenCall(callDetails)
   │
   ├── checkAgainstRules(phoneNumber)
   │   │
-  │   ├── Read SharedPreferences("HangUpRules", "active_rules")
+  │   ├── Read SharedPreferences("SpamShieldRules", "active_rules")
   │   │   Parse JSON array of { id, pattern, match_type }
   │   │
   │   ├── normalizeNumber(phoneNumber) → strip formatting
@@ -255,7 +255,7 @@ const withCallScreener = (config) => {
     // Create the service entry
     const serviceEntry = {
       $: {
-        "android:name": "expo.modules.callscreener.HangUpCallScreeningService",
+        "android:name": "expo.modules.callscreener.SpamShieldCallScreeningService",
         "android:permission": "android.permission.BIND_SCREENING_SERVICE",
         "android:exported": "true",
       },
@@ -364,7 +364,7 @@ Step 2: HOW IT WORKS
   │   OR "Skip"
   ▼
 Step 3: YOU'RE ALL SET
-  │ → "Start Blocking" → AsyncStorage.setItem('hangup_onboarding_complete', 'true')
+  │ → "Start Blocking" → AsyncStorage.setItem('spamshield_onboarding_complete', 'true')
   │                     → router.replace('/(tabs)')
   ▼
   Done (onboarding never shown again)

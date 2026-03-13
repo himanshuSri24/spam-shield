@@ -1,16 +1,16 @@
-# Hang Up — Project Overview
+# Spam Shield — Project Overview
 
-## What is Hang Up?
+## What is Spam Shield?
 
-Hang Up is a **privacy-first Android call blocking app** built with React Native and Expo. It lets users create rules to silently block unwanted calls — **no data ever leaves the device**.
+Spam Shield is a **privacy-first Android call blocking app** built with React Native and Expo. It lets users create rules to silently block unwanted calls — **no data ever leaves the device**.
 
-When someone calls you, Android hands the phone number to Hang Up _before your phone rings_. Hang Up checks it against your rules. If it matches, the call is silently rejected. If not, it rings normally. The caller has no idea they were screened.
+When someone calls you, Android hands the phone number to Spam Shield _before your phone rings_. Spam Shield checks it against your rules. If it matches, the call is silently rejected. If not, it rings normally. The caller has no idea they were screened.
 
 ---
 
 ## Why does this app exist?
 
-Most call-blocking apps send your call data to remote servers, use cloud-based spam databases, or require invasive permissions. Hang Up takes a different approach:
+Most call-blocking apps send your call data to remote servers, use cloud-based spam databases, or require invasive permissions. Spam Shield takes a different approach:
 
 - **Zero data collection** — everything stays in a local SQLite database on the device
 - **No internet required** — works fully offline
@@ -88,14 +88,14 @@ When a call is blocked, a record is created with:
 
 ### 3. Call Screening
 
-Android's `CallScreeningService` API (Android 10+) lets one app at a time inspect calls before they ring. The user must set Hang Up as the "default call screening app" via a system dialog. Once set, every incoming call from an unsaved contact passes through the service.
+Android's `CallScreeningService` API (Android 10+) lets one app at a time inspect calls before they ring. The user must set Spam Shield as the "default call screening app" via a system dialog. Once set, every incoming call from an unsaved contact passes through the service.
 
 ---
 
 ## Project Structure (high-level)
 
 ```
-hang-up/
+spam-shield/
 ├── app/                    ← Screens (file-based routing via Expo Router)
 │   ├── _layout.tsx         ← Root layout (fonts, splash, navigation stack)
 │   ├── onboarding.tsx      ← First-time setup wizard
@@ -129,7 +129,7 @@ hang-up/
 │       ├── src/CallScreenerModule.ts  ← requireNativeModule loader
 │       └── android/src/main/java/expo/modules/callscreener/
 │           ├── CallScreenerModule.kt          ← Bridge implementation
-│           └── HangUpCallScreeningService.kt  ← The actual call blocker
+│           └── SpamShieldCallScreeningService.kt  ← The actual call blocker
 │
 ├── plugins/                ← Expo config plugins
 │   └── withCallScreener.js ← Injects service into AndroidManifest.xml

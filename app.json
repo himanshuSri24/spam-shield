@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Hang Up",
-    "slug": "hang-up",
+    "name": "Spam Shield",
+    "slug": "spam-shield",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "hangup",
+    "scheme": "spamshield",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "android": {
@@ -16,7 +16,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.devwithcoffee.hangup"
+      "package": "com.devwithcoffee.spamshield"
     },
     "plugins": [
       "expo-router",

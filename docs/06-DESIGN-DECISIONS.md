@@ -68,7 +68,7 @@ app/settings.tsx  →  /settings (automatic)
 
 - Less boilerplate
 - Type-safe navigation (with `typedRoutes: true`)
-- Deep linking works automatically (`hangup://settings`)
+- Deep linking works automatically (`spamshield://settings`)
 - Familiar pattern if you've used Next.js
 
 **Trade-off**: Folder structure = navigation structure. You can't have a file in `app/` that isn't a route.
@@ -115,9 +115,9 @@ This pairing creates visual hierarchy. The serif headers catch the eye, while th
 
 ## 8. Why `setSkipCallLog(false)` When Blocking?
 
-When Hang Up blocks a call, it sets `setSkipCallLog(false)`. This means the blocked call **still appears in the phone's native call log** as a missed call.
+When Spam Shield blocks a call, it sets `setSkipCallLog(false)`. This means the blocked call **still appears in the phone's native call log** as a missed call.
 
-**Why not hide it?** Users want to know what was blocked. If they check their phone's call log and see a missed call, they can cross-reference with Hang Up's history to verify it was spam.
+**Why not hide it?** Users want to know what was blocked. If they check their phone's call log and see a missed call, they can cross-reference with Spam Shield's history to verify it was spam.
 
 Setting `setSkipCallLog(true)` would make blocked calls completely invisible — which could be dangerous if a legitimate call is accidentally blocked.
 

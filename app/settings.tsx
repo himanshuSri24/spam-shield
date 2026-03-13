@@ -32,17 +32,17 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     question: "How does call blocking work?",
     answer:
-      "When a call comes in, Android passes it through Hang Up before your phone rings. Hang Up checks the number against your rules and silently rejects matching calls. They never ring.",
+      "When a call comes in, Android passes it through Spam Shield before your phone rings. Spam Shield checks the number against your rules and silently rejects matching calls. They never ring.",
   },
   {
-    question: "Why do I need to set Hang Up as default?",
+    question: "Why do I need to set Spam Shield as default?",
     answer:
-      'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure - only one app can screen calls at a time. Hang Up doesn\'t replace your dialer.',
+      'Android requires apps to be the "default call screening app" to intercept calls. This is a security measure - only one app can screen calls at a time. Spam Shield doesn\'t replace your dialer.',
   },
   {
     question: "Does it block saved contacts?",
     answer:
-      "Android does not pass calls from your saved contacts through the call screening service. This means Hang Up cannot block numbers in your contacts - it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.",
+      "Android does not pass calls from your saved contacts through the call screening service. This means Spam Shield cannot block numbers in your contacts - it only filters unknown/unsaved callers. To block a saved contact, remove them from your contacts first.",
   },
   {
     question: "What are match types?",
@@ -60,9 +60,9 @@ const FAQ_ITEMS: FAQItem[] = [
       "Only calls matching your rules will be blocked. Be careful with broad patterns. You can always check blocked calls in the History tab and adjust your rules.",
   },
   {
-    question: "Does Hang Up use the internet?",
+    question: "Does Spam Shield use the internet?",
     answer:
-      "No. Hang Up works 100% offline on your device. No data is ever sent anywhere. Your rules and call history stay on your phone.",
+      "No. Spam Shield works 100% offline on your device. No data is ever sent anywhere. Your rules and call history stay on your phone.",
   },
 ];
 
@@ -243,7 +243,7 @@ export default function SettingsScreen() {
         <View style={styles.privacyCard}>
           <Text style={styles.privacyTitle}>Privacy First</Text>
           <Text style={styles.privacyText}>
-            Hang Up works entirely on your device. No data is ever sent to any
+            Spam Shield works entirely on your device. No data is ever sent to any
             server. Your blocking rules and call history never leave your phone.
           </Text>
         </View>

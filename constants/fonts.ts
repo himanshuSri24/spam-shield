@@ -1,5 +1,5 @@
 /**
- * Font loading and family constants for Hang Up.
+ * Font loading and family constants for Spam Shield.
  * Playfair Display for headers, Inter for body text.
  */
 

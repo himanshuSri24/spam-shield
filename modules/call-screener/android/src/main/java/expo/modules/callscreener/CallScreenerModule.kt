@@ -13,7 +13,7 @@ import expo.modules.kotlin.Promise
 class CallScreenerModule : Module() {
 
     companion object {
-        private const val TAG = "HangUpModule"
+        private const val TAG = "SpamShieldModule"
         const val REQUEST_CODE_SCREENING_ROLE = 42
 
         fun normalizeNumber(number: String): String {
@@ -182,7 +182,7 @@ class CallScreenerModule : Module() {
                     promise.resolve(false)
                     return@AsyncFunction
                 }
-                val prefs = context.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
                 prefs.edit().putString("active_rules", rulesJson).apply()
                 Log.d(TAG, "Successfully synced rules to SharedPreferences")
                 promise.resolve(true)
@@ -199,7 +199,7 @@ class CallScreenerModule : Module() {
                     promise.resolve("[]")
                     return@AsyncFunction
                 }
-                val prefs = context.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
                 val pendingJson = prefs.getString("pending_blocked_calls", "[]") ?: "[]"
                 // Clear the queue after reading
                 prefs.edit().putString("pending_blocked_calls", "[]").apply()
@@ -221,7 +221,7 @@ class CallScreenerModule : Module() {
                     return@AsyncFunction
                 }
 
-                val prefs = context.getSharedPreferences("HangUpRules", Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
                 val rulesJson = prefs.getString("active_rules", "[]") ?: "[]"
                 val jsonArray = org.json.JSONArray(rulesJson)
                 trace.add("Loaded ${jsonArray.length()} rules from SharedPreferences")

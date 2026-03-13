@@ -10,7 +10,7 @@ function normalizeNumber(number: string): string {
   return number.replace(/[\s\-\(\)]/g, '').trim();
 }
 
-// Mirrors the matching logic from HangUpCallScreeningService.kt
+// Mirrors the matching logic from SpamShieldCallScreeningService.kt
 function matchesRule(
   phoneNumber: string,
   pattern: string,

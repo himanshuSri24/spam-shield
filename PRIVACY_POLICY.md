@@ -1,14 +1,14 @@
-# Privacy Policy - Hang Up
+# Privacy Policy - Spam Shield
 
 **Last updated:** March 2026
 
 ## Overview
 
-Hang Up ("the App") is a call blocking application for Android. Your privacy is important to us. This policy explains what data the App collects, how it's used, and your rights.
+Spam Shield ("the App") is a call blocking application for Android. Your privacy is important to us. This policy explains what data the App collects, how it's used, and your rights.
 
 ## Data Collection
 
-**Hang Up does not collect, transmit, or share any personal data.**
+**Spam Shield does not collect, transmit, or share any personal data.**
 
 All data created by the App (blocking rules, blocked call logs, and settings) is stored exclusively on your device using a local SQLite database. No data is ever sent to external servers, cloud services, or third parties.
 
@@ -60,4 +60,4 @@ If you have questions about this privacy policy, please open an issue on the pro
 
 ## Open Source
 
-Hang Up is open source. You can inspect the complete source code to verify these privacy claims.
+Spam Shield is open source. You can inspect the complete source code to verify these privacy claims.

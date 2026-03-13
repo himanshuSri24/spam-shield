@@ -1,3 +1,4 @@
+import { AppLogo } from "@/components/AppLogo";
 import { FontFamily } from "@/constants/fonts";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,7 +18,7 @@ import {
   requestScreeningRole,
 } from "../modules/call-screener";
 
-const ONBOARDING_KEY = "hangup_onboarding_complete";
+const ONBOARDING_KEY = "spamshield_onboarding_complete";
 
 export async function isOnboardingComplete(): Promise<boolean> {
   const value = await AsyncStorage.getItem(ONBOARDING_KEY);
@@ -26,12 +27,12 @@ export async function isOnboardingComplete(): Promise<boolean> {
 
 const STEPS = [
   {
-    title: "Welcome to\nHang Up",
+    title: "Welcome to\nSpam Shield",
     body: "Take back control of your phone.\nBlock spam calls before they even ring.",
   },
   {
     title: "Enable Call\nScreening",
-    body: "To silently block calls, Hang Up needs to be set as your default call screening app.\n\nNo data ever leaves your device.",
+    body: "To silently block calls, Spam Shield needs to be set as your default call screening app.\n\nNo data ever leaves your device.",
   },
   {
     title: "How It\nWorks",
@@ -135,6 +136,9 @@ export default function OnboardingScreen() {
         entering={FadeInDown.duration(400)}
         style={styles.content}
       >
+        <View style={styles.logoWrap}>
+          <AppLogo size={36} />
+        </View>
         <Text style={styles.title}>{stepData.title}</Text>
         <Text style={styles.body}>{displayBody}</Text>
       </Animated.View>
@@ -200,6 +204,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  logoWrap: {
+    marginBottom: Spacing.md,
   },
   title: {
     fontFamily: FontFamily.displayBold,

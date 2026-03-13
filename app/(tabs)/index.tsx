@@ -1,3 +1,4 @@
+import { AppLogo } from "@/components/AppLogo";
 import { BlockedCallItem } from "@/components/BlockedCallItem";
 import { StatCard } from "@/components/StatCard";
 import { FontFamily } from "@/constants/fonts";
@@ -112,7 +113,10 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ width: 36 }} />
-          <Text style={styles.appName}>Hang Up</Text>
+          <View style={styles.brandWrap}>
+            <AppLogo size={30} />
+            <Text style={styles.appName}>Spam Shield</Text>
+          </View>
           <TouchableOpacity
             onPress={() => router.push("/settings")}
             style={styles.settingsButton}
@@ -221,6 +225,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
+  },
+  brandWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
   },
   settingsButton: {
     width: 36,

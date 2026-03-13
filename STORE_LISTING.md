@@ -1,14 +1,14 @@
-# Play Store Listing - Hang Up
+# Play Store Listing - Spam Shield
 
 ## App Name
-Hang Up – Call Blocker
+Spam Shield – Call Blocker
 
 ## Short Description (80 chars max)
 Block unwanted calls with custom rules. Lightweight, private, no ads.
 
 ## Full Description (4000 chars max)
 
-**Hang Up** is a clean, elegant call blocker that lets you take control of who can reach you. Create flexible blocking rules using exact numbers, prefixes, suffixes, patterns, or even regex - and never be bothered by spam callers again.
+**Spam Shield** is a clean, elegant call blocker that lets you take control of who can reach you. Create flexible blocking rules using exact numbers, prefixes, suffixes, patterns, or even regex - and never be bothered by spam callers again.
 
 🛡️ **Powerful Blocking Rules**
 • Block exact phone numbers
@@ -46,7 +46,7 @@ Block unwanted calls with custom rules. Lightweight, private, no ads.
 
 ---
 
-**Hang Up** is free, open source, and will never show you an ad. Built with Expo and React Native.
+**Spam Shield** is free, open source, and will never show you an ad. Built with Expo and React Native.
 
 ## Category
 Tools

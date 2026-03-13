@@ -1,7 +1,7 @@
 const { withAndroidManifest } = require('@expo/config-plugins');
 
 /**
- * Expo Config Plugin to register the HangUpCallScreeningService
+ * Expo Config Plugin to register the SpamShieldCallScreeningService
  * in AndroidManifest.xml with the required permission and intent filter.
  */
 const withCallScreener = (config) => {
@@ -10,12 +10,12 @@ const withCallScreener = (config) => {
 
     // Check if service is already registered
     const existingService = mainApplication.service?.find(
-      (s) => s.$?.['android:name'] === 'expo.modules.callscreener.HangUpCallScreeningService'
+      (s) => s.$?.['android:name'] === 'expo.modules.callscreener.SpamShieldCallScreeningService'
     );
 
     const serviceEntry = {
       $: {
-        'android:name': 'expo.modules.callscreener.HangUpCallScreeningService',
+        'android:name': 'expo.modules.callscreener.SpamShieldCallScreeningService',
         'android:permission': 'android.permission.BIND_SCREENING_SERVICE',
         'android:exported': 'true',
       },

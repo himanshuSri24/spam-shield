@@ -1,5 +1,5 @@
 /**
- * Hang Up - Design Tokens
+ * Spam Shield - Design Tokens
  *
  * Retro pastel theme inspired by editorial design.
  * Warm cream backgrounds, coral accents, clean typography.
