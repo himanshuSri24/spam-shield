@@ -11,19 +11,20 @@ import {
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
 import { useFonts } from "expo-font";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
-import { isOnboardingComplete } from "./onboarding";
+import { isOnboardingComplete } from "./onboarding-state";
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const router = useRouter();
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<
+    "(tabs)" | "onboarding" | null
+  >(null);
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
     PlayfairDisplay_400Regular_Italic,
@@ -36,24 +37,35 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
-      isOnboardingComplete().then((complete) => {
-        if (!complete) {
-          router.replace("/onboarding");
-        }
-        setOnboardingChecked(true);
-        SplashScreen.hideAsync();
-      });
+    if (!fontsLoaded) {
+      return;
     }
+
+    const initializeApp = async () => {
+      try {
+        const complete = await isOnboardingComplete();
+        setInitialRoute(complete ? "(tabs)" : "onboarding");
+      } catch {
+        // Fail open to onboarding if storage read fails.
+        setInitialRoute("onboarding");
+      } finally {
+        await SplashScreen.hideAsync();
+      }
+    };
+
+    initializeApp();
   }, [fontsLoaded]);
 
-  if (!fontsLoaded || !onboardingChecked) {
+  if (!fontsLoaded || !initialRoute) {
     return null;
   }
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack
+        initialRouteName={initialRoute}
+        screenOptions={{ headerShown: false }}
+      >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="onboarding"

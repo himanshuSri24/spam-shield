@@ -1,7 +1,6 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FontFamily } from "@/constants/fonts";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -17,13 +16,7 @@ import {
   isScreeningEnabled,
   requestScreeningRole,
 } from "../modules/call-screener";
-
-const ONBOARDING_KEY = "spamshield_onboarding_complete";
-
-export async function isOnboardingComplete(): Promise<boolean> {
-  const value = await AsyncStorage.getItem(ONBOARDING_KEY);
-  return value === "true";
-}
+import { setOnboardingComplete } from "./onboarding-state";
 
 const STEPS = [
   {
@@ -85,7 +78,7 @@ export default function OnboardingScreen() {
   };
 
   const handleFinish = async () => {
-    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+    await setOnboardingComplete();
     router.replace("/(tabs)");
   };
 

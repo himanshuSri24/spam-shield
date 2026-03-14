@@ -37,11 +37,4 @@
   <!-- Diagonal slash through - the "block" indicator -->
   <line x1="330" y1="290" x2="694" y2="630" stroke="#B84E2B" stroke-width="36" stroke-linecap="round" opacity="0.9"/>
   
-  <!-- App name - clean modern serif -->
-  <text x="512" y="800" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="120" fill="#2D2D2D" letter-spacing="6">
-    HANG UP
-  </text>
-  
-  <!-- Thin accent line under text -->
-  <line x1="370" y1="830" x2="654" y2="830" stroke="#D4613A" stroke-width="4" stroke-linecap="round"/>
 </svg>
