@@ -8,22 +8,9 @@ import { BlockedCallItem } from '@/components/BlockedCallItem';
 import { EmptyState } from '@/components/EmptyState';
 import { useBlockedCalls } from '@/hooks/useDatabase';
 import { drainPendingBlockedCalls } from '@/database/db';
+import { formatTimestamp } from '@/utils/formatTimestamp';
 
-function formatTimestamp(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHrs = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHrs < 24) return `${diffHrs} hr${diffHrs > 1 ? 's' : ''} ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString();
-}
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -81,7 +68,7 @@ export default function HistoryScreen() {
           </View>
         ) : filteredCalls.length === 0 ? (
           <EmptyState
-            icon="📱"
+            icon="H"
             title={search ? 'No matches found' : 'No blocked calls yet'}
             message={
               search

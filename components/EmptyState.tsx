@@ -1,7 +1,7 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { FontFamily } from '@/constants/fonts';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { FontFamily } from "@/constants/fonts";
 
 interface EmptyStateProps {
   icon: string;
@@ -12,7 +12,9 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, message }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconBadge}>
+        <Text style={styles.iconText}>{icon}</Text>
+      </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
     </View>
@@ -21,27 +23,37 @@ export function EmptyState({ icon, title, message }: EmptyStateProps) {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: Spacing.massive,
     paddingHorizontal: Spacing.xxxl,
   },
-  icon: {
-    fontSize: 48,
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.coralPale,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.lg,
+  },
+  iconText: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: 22,
+    color: Colors.coral,
   },
   title: {
     fontFamily: FontFamily.displaySemiBold,
     fontSize: 20,
     color: Colors.charcoal,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.sm,
   },
   message: {
     fontFamily: FontFamily.bodyRegular,
     fontSize: 14,
     color: Colors.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
 });

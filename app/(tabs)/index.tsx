@@ -1,10 +1,12 @@
 import { AppLogo } from "@/components/AppLogo";
+import { ScreeningSetupModal } from "@/components/ScreeningSetupModal";
 import { BlockedCallItem } from "@/components/BlockedCallItem";
 import { StatCard } from "@/components/StatCard";
 import { FontFamily } from "@/constants/fonts";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
 import { drainPendingBlockedCalls, flushDB } from "@/database/db";
 import { useRecentBlocks, useStats } from "@/hooks/useDatabase";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -23,21 +25,7 @@ import {
   requestScreeningRole,
 } from "../../modules/call-screener";
 
-function formatTimestamp(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHrs = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHrs < 24) return `${diffHrs} hr${diffHrs > 1 ? "s" : ""} ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString();
-}
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
@@ -46,6 +34,7 @@ export default function DashboardScreen() {
   const { calls: recentBlocks, refresh: refreshRecent } = useRecentBlocks();
   const [screeningActive, setScreeningActive] = useState(true);
   const [enablingScreening, setEnablingScreening] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const waitingForRole = useRef(false);
 
   // When user returns from system dialog, check role status
@@ -81,6 +70,17 @@ export default function DashboardScreen() {
     }, [refreshStats, refreshRecent]),
   );
 
+  const tryScreeningFallback = async () => {
+    try {
+      await openScreeningSettings();
+      waitingForRole.current = true;
+      setEnablingScreening(false);
+    } catch {
+      setEnablingScreening(false);
+      setShowInstructions(true);
+    }
+  };
+
   const handleEnableScreening = async () => {
     setEnablingScreening(true);
     try {
@@ -90,18 +90,22 @@ export default function DashboardScreen() {
         setEnablingScreening(false);
         return;
       }
-      // System dialog opened — AppState listener will handle the result
-      waitingForRole.current = true;
+      if (result === "requested") {
+        // System dialog opened — AppState listener will handle the result
+        waitingForRole.current = true;
+        setEnablingScreening(false);
+        return;
+      }
+      // "failed" — cascade to settings
+      await tryScreeningFallback();
     } catch {
-      try {
-        await openScreeningSettings();
-      } catch {}
-      waitingForRole.current = true;
+      await tryScreeningFallback();
     }
   };
 
   return (
-    <ScrollView
+    <>
+      <ScrollView
       style={styles.container}
       contentContainerStyle={[
         styles.content,
@@ -122,7 +126,7 @@ export default function DashboardScreen() {
             style={styles.settingsButton}
             activeOpacity={0.7}
           >
-            <Text style={styles.settingsIcon}>⚙</Text>
+            <Text style={styles.settingsIcon}>Settings</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.tagline}>Your calls, your rules.</Text>
@@ -158,8 +162,6 @@ export default function DashboardScreen() {
 
       {/* Decorative divider */}
       <View style={styles.dividerContainer}>
-        <View style={styles.divider} />
-        <Text style={styles.dividerIcon}>✦</Text>
         <View style={styles.divider} />
       </View>
 
@@ -204,7 +206,12 @@ export default function DashboardScreen() {
 
       {/* Bottom padding */}
       <View style={{ height: Spacing.xxxl }} />
-    </ScrollView>
+      </ScrollView>
+      <ScreeningSetupModal
+        visible={showInstructions}
+        onClose={() => setShowInstructions(false)}
+      />
+    </>
   );
 }
 
@@ -232,14 +239,15 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   settingsButton: {
-    width: 36,
-    height: 36,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     alignItems: "center",
     justifyContent: "center",
   },
   settingsIcon: {
-    fontSize: 22,
-    color: Colors.textMuted,
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 13,
+    color: Colors.coral,
   },
   appName: {
     fontFamily: FontFamily.displayBold,
@@ -263,11 +271,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: Colors.border,
-  },
-  dividerIcon: {
-    fontSize: 12,
-    color: Colors.coral,
-    marginHorizontal: Spacing.md,
   },
   statsGrid: {
     marginBottom: Spacing.xxl,

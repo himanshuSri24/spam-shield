@@ -14,17 +14,13 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "react-native-reanimated";
-import { isOnboardingComplete } from "./onboarding-state";
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [initialRoute, setInitialRoute] = useState<
-    "(tabs)" | "onboarding" | null
-  >(null);
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
     PlayfairDisplay_400Regular_Italic,
@@ -41,31 +37,21 @@ export default function RootLayout() {
       return;
     }
 
-    const initializeApp = async () => {
-      try {
-        const complete = await isOnboardingComplete();
-        setInitialRoute(complete ? "(tabs)" : "onboarding");
-      } catch {
-        // Fail open to onboarding if storage read fails.
-        setInitialRoute("onboarding");
-      } finally {
-        await SplashScreen.hideAsync();
-      }
-    };
-
-    initializeApp();
+    SplashScreen.hideAsync().catch(() => {
+      // Ignore hide errors if splash has already been dismissed.
+    });
   }, [fontsLoaded]);
 
-  if (!fontsLoaded || !initialRoute) {
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
     <>
       <Stack
-        initialRouteName={initialRoute}
         screenOptions={{ headerShown: false }}
       >
+        <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="onboarding"

@@ -1,50 +1,43 @@
-# Welcome to your Expo app 👋
+# Spam Shield – Call Blocker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A clean, privacy-first call blocking app for Android. Create flexible blocking rules using exact numbers, prefixes, suffixes, patterns, or regex — and never be bothered by spam callers again.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Flexible blocking rules** — exact, starts-with, ends-with, contains, and regex
+- **Privacy first** — 100% offline, no data leaves your device, no analytics
+- **Dashboard** — see blocked call stats at a glance
+- **History** — search and review all blocked calls
+- **Quick presets** — one-tap templates for common spam patterns (Indian telemarketers, toll-free, etc.)
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+- **React Native** (Expo SDK 54) with file-based routing
+- **Kotlin** native module for Android `CallScreeningService`
+- **SQLite** (expo-sqlite) for local storage
+- **SharedPreferences bridge** to avoid WAL contention between JS and native service
 
-   ```bash
-   npx expo start
-   ```
+## Architecture
 
-In the output, you'll find options to open the app in a
+The app uses Android's `CallScreeningService` API (Android 10+). Active rules are synced from SQLite to `SharedPreferences` via a native bridge so the Kotlin service can read them without contending with expo-sqlite's WAL file. Blocked calls are queued in `SharedPreferences` by the native service and drained into SQLite by the JS layer on app focus.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
+npx expo run:android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Build Release APK
 
-## Learn more
+```bash
+npm run android:apk
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Privacy
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Spam Shield works entirely on your device. No data is ever sent to any server. See [PRIVACY_POLICY.md](./PRIVACY_POLICY.md) for details.
 
-## Join the community
+## License
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+All rights reserved. © devwithcoffee

@@ -46,9 +46,3 @@ export function getPendingBlockedCalls(): Promise<string> {
   return CallScreenerModule.getPendingBlockedCalls();
 }
 
-/**
- * Developer test method to verify match logic without a real call.
- */
-export function testMatch(phoneNumber: string): Promise<any> {
-  return CallScreenerModule.testMatch(phoneNumber);
-}

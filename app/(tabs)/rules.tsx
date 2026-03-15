@@ -51,7 +51,7 @@ export default function RulesScreen() {
 
           {rules.length === 0 ? (
             <EmptyState
-              icon="🛡️"
+              icon="R"
               title="No rules yet"
               message="Add your first blocking rule to start filtering unwanted calls."
             />

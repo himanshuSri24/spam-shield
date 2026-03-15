@@ -8,10 +8,10 @@ type AppLogoProps = {
 
 export function AppLogo({ size = 28 }: AppLogoProps) {
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <View style={[styles.container, { width: size * 1.2, height: size * 1.2 }]}>
       <Image
         source={require("../assets/branding/logo.svg")}
-        style={StyleSheet.absoluteFill}
+        style={{ width: size, height: size }}
         contentFit="contain"
       />
     </View>

@@ -12,8 +12,10 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreeningSetupModal } from "@/components/ScreeningSetupModal";
 import {
   isScreeningEnabled,
+  openScreeningSettings,
   requestScreeningRole,
 } from "../modules/call-screener";
 import { setOnboardingComplete } from "./onboarding-state";
@@ -42,6 +44,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [screeningEnabled, setScreeningEnabled] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const waitingForRole = useRef(false);
 
   // When user returns from the system role dialog, check if they granted it
@@ -60,6 +63,15 @@ export default function OnboardingScreen() {
     return () => subscription.remove();
   }, []);
 
+  const trySettingsFallback = async () => {
+    try {
+      await openScreeningSettings();
+      waitingForRole.current = true;
+    } catch {
+      setShowInstructions(true);
+    }
+  };
+
   const handleRequestRole = async () => {
     try {
       const result = await requestScreeningRole();
@@ -70,10 +82,17 @@ export default function OnboardingScreen() {
         return;
       }
 
-      // System dialog opened — wait for user to return
-      waitingForRole.current = true;
+      if (result === "requested") {
+        // System dialog opened — wait for user to return
+        waitingForRole.current = true;
+        return;
+      }
+
+      // "failed" or unknown — try opening settings page
+      await trySettingsFallback();
     } catch {
-      setStep(2);
+      // Role not available on this device — cascade to settings / instructions
+      await trySettingsFallback();
     }
   };
 
@@ -164,6 +183,11 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      <ScreeningSetupModal
+        visible={showInstructions}
+        onClose={() => setShowInstructions(false)}
+      />
     </View>
   );
 }

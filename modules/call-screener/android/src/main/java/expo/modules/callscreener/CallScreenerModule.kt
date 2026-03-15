@@ -25,17 +25,27 @@ class CallScreenerModule : Module() {
                 .trim()
         }
 
-        fun tryOpenSettings(context: Context): Boolean {
-            // Try Caller ID & spam settings (Android 10+)
+        fun tryOpenSettings(context: Context, activity: android.app.Activity? = null): Boolean {
             val intents = listOf(
                 Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
                 Intent(Settings.ACTION_SETTINGS)
             )
             for (intent in intents) {
+                // Try from current Activity first — no NEW_TASK flag needed, more reliable on custom ROMs
+                if (activity != null) {
+                    try {
+                        activity.startActivity(Intent(intent))
+                        Log.d(TAG, "openScreeningSettings: opened via activity ${intent.action}")
+                        return true
+                    } catch (e: Exception) {
+                        Log.w(TAG, "openScreeningSettings: activity failed for ${intent.action}", e)
+                    }
+                }
+                // Fall back to application context with NEW_TASK flag
                 try {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                    Log.d(TAG, "openScreeningSettings: opened ${intent.action}")
+                    val ctxIntent = Intent(intent).also { it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                    context.startActivity(ctxIntent)
+                    Log.d(TAG, "openScreeningSettings: opened via context ${intent.action}")
                     return true
                 } catch (e: Exception) {
                     Log.w(TAG, "openScreeningSettings: ${intent.action} failed", e)
@@ -163,7 +173,7 @@ class CallScreenerModule : Module() {
                     return@AsyncFunction
                 }
 
-                val launched = tryOpenSettings(context)
+                val launched = tryOpenSettings(context, appContext.currentActivity)
                 if (launched) {
                     promise.resolve(true)
                 } else {

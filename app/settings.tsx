@@ -1,6 +1,7 @@
 import { FontFamily } from "@/constants/fonts";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
 import { clearAllData } from "@/database/db";
+import { ScreeningSetupModal } from "@/components/ScreeningSetupModal";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -73,6 +74,7 @@ export default function SettingsScreen() {
   const [serviceStatus, setServiceStatus] = useState<string>("checking...");
   const [isRequesting, setIsRequesting] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
   const waitingForRole = useRef(false);
 
   useEffect(() => {
@@ -119,8 +121,11 @@ export default function SettingsScreen() {
       } catch {
         try {
           await openScreeningSettings();
-        } catch {}
-        waitingForRole.current = true;
+          waitingForRole.current = true;
+        } catch {
+          setIsRequesting(false);
+          setShowInstructions(true);
+        }
       }
     } else {
       Alert.alert(
@@ -296,6 +301,14 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <ScreeningSetupModal
+        visible={showInstructions}
+        onClose={() => {
+          setShowInstructions(false);
+          checkStatus();
+        }}
+      />
     </View>
   );
 }
