@@ -1,4 +1,4 @@
-import { isOnboardingComplete } from "@/app/onboarding-state";
+import { isOnboardingComplete } from "@/utils/onboarding-state";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";

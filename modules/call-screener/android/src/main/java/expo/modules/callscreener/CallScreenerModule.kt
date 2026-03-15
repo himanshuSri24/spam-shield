@@ -79,25 +79,15 @@ class CallScreenerModule : Module() {
                                 Log.d(TAG, "requestScreeningRole: Launching role request dialog")
                                 try {
                                     val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     currentActivity.startActivityForResult(intent, REQUEST_CODE_SCREENING_ROLE)
-                                    // Resolve "requested" so JS knows to poll for status
                                     promise.resolve("requested")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "requestScreeningRole: startActivityForResult failed, trying context", e)
-                                    try {
-                                        val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        context.startActivity(intent)
-                                        promise.resolve("requested")
-                                    } catch (e2: Exception) {
-                                        Log.e(TAG, "requestScreeningRole: fallback also failed", e2)
-                                        promise.resolve("failed")
-                                    }
+                                    Log.e(TAG, "requestScreeningRole: startActivityForResult failed", e)
+                                    promise.resolve("failed")
                                 }
                             } else {
                                 Log.e(TAG, "requestScreeningRole: No active activity")
-                                promise.reject("ERR_NO_ACTIVITY", "No active activity to show role request", null)
+                                promise.resolve("failed")
                             }
                         }
                     } else {

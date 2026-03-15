@@ -18,7 +18,7 @@ import {
   openScreeningSettings,
   requestScreeningRole,
 } from "../modules/call-screener";
-import { setOnboardingComplete } from "./onboarding-state";
+import { setOnboardingComplete } from "@/utils/onboarding-state";
 
 const STEPS = [
   {
