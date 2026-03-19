@@ -15,7 +15,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.devwithcoffee.spamshield"
+      "package": "com.devwithcoffee.spamshield",
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",
