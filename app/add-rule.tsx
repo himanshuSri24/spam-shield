@@ -9,7 +9,10 @@ import {
 } from "@/database/db";
 import * as Localization from "expo-localization";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
+import {
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from "libphonenumber-js";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,

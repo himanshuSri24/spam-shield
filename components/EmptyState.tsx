@@ -1,7 +1,7 @@
+import { FontFamily } from "@/constants/fonts";
+import { Colors, Spacing } from "@/constants/theme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
-import { FontFamily } from "@/constants/fonts";
 
 interface EmptyStateProps {
   icon: string;

@@ -1,6 +1,6 @@
 import { AppLogo } from "@/components/AppLogo";
-import { ScreeningSetupModal } from "@/components/ScreeningSetupModal";
 import { BlockedCallItem } from "@/components/BlockedCallItem";
+import { ScreeningSetupModal } from "@/components/ScreeningSetupModal";
 import { StatCard } from "@/components/StatCard";
 import { FontFamily } from "@/constants/fonts";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
@@ -24,8 +24,6 @@ import {
   openScreeningSettings,
   requestScreeningRole,
 } from "../../modules/call-screener";
-
-
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
@@ -106,106 +104,106 @@ export default function DashboardScreen() {
   return (
     <>
       <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + Spacing.lg },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={{ width: 36 }} />
-          <View style={styles.brandWrap}>
-            <AppLogo size={30} />
-            <Text style={styles.appName}>Spam Shield</Text>
+        style={styles.container}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + Spacing.lg },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={{ width: 36 }} />
+            <View style={styles.brandWrap}>
+              <AppLogo size={30} />
+              <Text style={styles.appName}>Spam Shield</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push("/settings")}
+              style={styles.settingsButton}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.settingsIcon}>Settings</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => router.push("/settings")}
-            style={styles.settingsButton}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsIcon}>Settings</Text>
-          </TouchableOpacity>
+          <Text style={styles.tagline}>Your calls, your rules.</Text>
         </View>
-        <Text style={styles.tagline}>Your calls, your rules.</Text>
-      </View>
 
-      {/* Screening disabled warning */}
-      {!screeningActive && (
-        <View>
-          <TouchableOpacity
-            style={styles.warningBanner}
-            onPress={handleEnableScreening}
-            disabled={enablingScreening}
-            activeOpacity={0.8}
-          >
-            {enablingScreening ? (
-              <>
-                <ActivityIndicator size="small" color="#92400E" />
-                <Text style={[styles.warningText, { marginTop: Spacing.xs }]}>
-                  Opening settings...
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.warningText}>
-                  Call screening is disabled. Calls won{"'"}t be blocked.
-                </Text>
-                <Text style={styles.warningAction}>Tap to enable</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Decorative divider */}
-      <View style={styles.dividerContainer}>
-        <View style={styles.divider} />
-      </View>
-
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statPrimary}>
-          <StatCard
-            value={stats.totalBlocked}
-            label="Calls Blocked"
-            sublabel="All time"
-            accent
-          />
-        </View>
-        <View style={styles.statRow}>
-          <View style={styles.statHalf}>
-            <StatCard value={stats.blockedToday} label="Today" />
+        {/* Screening disabled warning */}
+        {!screeningActive && (
+          <View>
+            <TouchableOpacity
+              style={styles.warningBanner}
+              onPress={handleEnableScreening}
+              disabled={enablingScreening}
+              activeOpacity={0.8}
+            >
+              {enablingScreening ? (
+                <>
+                  <ActivityIndicator size="small" color="#92400E" />
+                  <Text style={[styles.warningText, { marginTop: Spacing.xs }]}>
+                    Opening settings...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.warningText}>
+                    Call screening is disabled. Calls won{"'"}t be blocked.
+                  </Text>
+                  <Text style={styles.warningAction}>Tap to enable</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-          <View style={styles.statHalf}>
-            <StatCard value={stats.activeRules} label="Active Rules" />
-          </View>
-        </View>
-      </View>
+        )}
 
-      {/* Recent Blocks */}
-      {recentBlocks.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Blocks</Text>
+        {/* Decorative divider */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+        </View>
+
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statPrimary}>
+            <StatCard
+              value={stats.totalBlocked}
+              label="Calls Blocked"
+              sublabel="All time"
+              accent
+            />
           </View>
-          <View style={styles.recentCard}>
-            {recentBlocks.map((block) => (
-              <BlockedCallItem
-                key={block.id}
-                phoneNumber={block.phone_number}
-                matchedPattern={block.matched_pattern ?? "Unknown rule"}
-                timestamp={formatTimestamp(block.blocked_at)}
-              />
-            ))}
+          <View style={styles.statRow}>
+            <View style={styles.statHalf}>
+              <StatCard value={stats.blockedToday} label="Today" />
+            </View>
+            <View style={styles.statHalf}>
+              <StatCard value={stats.activeRules} label="Active Rules" />
+            </View>
           </View>
         </View>
-      )}
 
-      {/* Bottom padding */}
-      <View style={{ height: Spacing.xxxl }} />
+        {/* Recent Blocks */}
+        {recentBlocks.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Blocks</Text>
+            </View>
+            <View style={styles.recentCard}>
+              {recentBlocks.map((block) => (
+                <BlockedCallItem
+                  key={block.id}
+                  phoneNumber={block.phone_number}
+                  matchedPattern={block.matched_pattern ?? "Unknown rule"}
+                  timestamp={formatTimestamp(block.blocked_at)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Bottom padding */}
+        <View style={{ height: Spacing.xxxl }} />
       </ScrollView>
       <ScreeningSetupModal
         visible={showInstructions}
