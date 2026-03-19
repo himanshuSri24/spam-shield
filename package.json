@@ -5,12 +5,10 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "android:apk": "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'D:/apks' | Out-Null; Set-Location android; .\\gradlew.bat assembleRelease\"",
+    "android:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-apk.ps1",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint",
-    "test": "jest",
-    "assets:generate": "node scripts/generate-brand-assets.mjs"
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -40,13 +38,9 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "jest": "^30.2.0",
-    "sharp": "^0.34.4",
-    "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
   },
   "private": true
