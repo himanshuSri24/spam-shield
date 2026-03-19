@@ -98,11 +98,11 @@ export async function flushDB(): Promise<void> {
 export async function drainPendingBlockedCalls(): Promise<number> {
   try {
     const pendingJson = await getPendingBlockedCalls();
-    const pending: Array<{
+    const pending: {
       phone_number: string;
       matched_rule_id: number;
       blocked_at: string;
-    }> = JSON.parse(pendingJson);
+    }[] = JSON.parse(pendingJson);
 
     if (pending.length === 0) return 0;
 

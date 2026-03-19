@@ -9,7 +9,7 @@ import {
 } from "@/database/db";
 import * as Localization from "expo-localization";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -129,11 +129,11 @@ export default function AddRuleScreen() {
       // types something weird that can't be parsed, just strip formatting.
       if (matchType === "exact") {
         const regionCodes = Localization.getLocales();
-        const defaultRegion =
+        const defaultRegion = (
           regionCodes.length > 0 && regionCodes[0].regionCode
             ? regionCodes[0].regionCode
-            : "IN";
-        // @ts-ignore - libphonenumber types are slightly off
+            : "IN"
+        ) as CountryCode;
         const phoneNumber = parsePhoneNumberFromString(
           cleanedPattern,
           defaultRegion,

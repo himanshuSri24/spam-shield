@@ -151,7 +151,7 @@ export default function DashboardScreen() {
             ) : (
               <>
                 <Text style={styles.warningText}>
-                  Call screening is disabled. Calls won't be blocked.
+                  Call screening is disabled. Calls won{"'"}t be blocked.
                 </Text>
                 <Text style={styles.warningAction}>Tap to enable</Text>
               </>
