@@ -30,7 +30,8 @@
       ],
       "expo-sqlite",
       "./plugins/withCallScreener",
-      "./plugins/withShortCmakePath"
+      "./plugins/withShortCmakePath",
+      "./plugins/withReleaseSigning"
     ],
     "experiments": {
       "typedRoutes": true,

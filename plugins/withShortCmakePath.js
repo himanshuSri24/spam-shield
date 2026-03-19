@@ -1,4 +1,4 @@
-const { withAppBuildGradle } = require('@expo/config-plugins');
+const { withAppBuildGradle } = require("@expo/config-plugins");
 
 /**
  * Fixes Windows MAX_PATH (260 char) build failures.
@@ -22,7 +22,7 @@ const withShortCmakePath = (config) => {
     let contents = config.modResults.contents;
 
     // ── 1. defaultConfig cmake arguments ──────────────────────────────────
-    if (!contents.includes('CMAKE_OBJECT_PATH_MAX')) {
+    if (!contents.includes("CMAKE_OBJECT_PATH_MAX")) {
       contents = contents.replace(
         /(ndk\s*\{[^}]*\})/,
         `$1
@@ -31,17 +31,17 @@ const withShortCmakePath = (config) => {
                 // Keep object file paths short to avoid Windows 260-char MAX_PATH limit
                 arguments "-DCMAKE_OBJECT_PATH_MAX=150"
             }
-        }`
+        }`,
       );
     }
 
     // ── 2. android-level buildStagingDirectory ────────────────────────────
-    if (!contents.includes('buildStagingDirectory')) {
+    if (!contents.includes("buildStagingDirectory")) {
       // Define isWindowsHost if not already present
-      if (!contents.includes('isWindowsHost')) {
+      if (!contents.includes("isWindowsHost")) {
         contents = contents.replace(
           /(apply plugin: "com\.facebook\.react")/,
-          `$1\n\ndef isWindowsHost = System.getProperty('os.name').toLowerCase().contains('windows')`
+          `$1\n\ndef isWindowsHost = System.getProperty('os.name').toLowerCase().contains('windows')`,
         );
       }
       // Insert a global externalNativeBuild block guarded by isWindowsHost,
@@ -50,15 +50,15 @@ const withShortCmakePath = (config) => {
       contents = contents.replace(
         /(androidResources\s*\{[^}]*\}\s*\n)(})/,
         `$1    if (isWindowsHost) {\n` +
-        `        // Redirect CMake staging dir to a short path — avoids Windows 260-char MAX_PATH.\n` +
-        `        // Use with scripts/build-apk.ps1 (subst Z:) for full effect.\n` +
-        `        externalNativeBuild {\n` +
-        `            cmake {\n` +
-        `                buildStagingDirectory "D:/b"\n` +
-        `            }\n` +
-        `        }\n` +
-        `    }\n` +
-        `$2`
+          `        // Redirect CMake staging dir to a short path — avoids Windows 260-char MAX_PATH.\n` +
+          `        // Use with scripts/build-apk.ps1 (subst Z:) for full effect.\n` +
+          `        externalNativeBuild {\n` +
+          `            cmake {\n` +
+          `                buildStagingDirectory "D:/b"\n` +
+          `            }\n` +
+          `        }\n` +
+          `    }\n` +
+          `$2`,
       );
     }
 
