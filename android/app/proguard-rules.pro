@@ -12,3 +12,6 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# Keep the native call screening service (registered in AndroidManifest)
+-keep class com.devwithcoffee.spamshield.callscreener.** { *; }
