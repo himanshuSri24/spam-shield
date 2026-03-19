@@ -1,4 +1,4 @@
-﻿# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
 node_modules/
@@ -49,13 +49,8 @@ yarn-error.*
 
 app-example
 
-# debug log files
+# debug log files — catch any accidental dumps
 *.txt
 !README.md
 *.b64
-hangup.db
-build_log.txt
-logcat_*.txt
-hangup_logs.txt
-dumpsys_telecom.txt
-backdate-commits.sh
+*.db

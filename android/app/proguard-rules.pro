@@ -11,11 +11,4 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
-# Strip verbose/debug/info logs in release builds
--assumenosideeffects class android.util.Log {
-    public static int v(...);
-    public static int d(...);
-    public static int i(...);
-}
-
 # Add any project specific keep options here:

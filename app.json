@@ -29,7 +29,8 @@
         }
       ],
       "expo-sqlite",
-      "./plugins/withCallScreener"
+      "./plugins/withCallScreener",
+      "./plugins/withShortCmakePath"
     ],
     "experiments": {
       "typedRoutes": true,
