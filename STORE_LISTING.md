@@ -59,4 +59,4 @@ call blocker, spam blocker, block calls, call screening, phone filter, spam filt
 himanshu20032002@gmail.com
 
 ## Privacy Policy URL
-https://github.com/himanshuSri24/hang-up/blob/main/PRIVACY_POLICY.md
+https://devwithcoffee.com/spamshield/privacy-policy
