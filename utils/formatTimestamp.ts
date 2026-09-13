@@ -1,9 +1,21 @@
 /**
  * Format a date string into a human-readable relative timestamp.
  * Used across Dashboard and History screens.
+ *
+ * blocked_at is stored as UTC "YYYY-MM-DD HH:MM:SS" (SQLite's format). A bare
+ * `new Date()` on that string is engine-dependent on Hermes and, where it does
+ * parse, is read as LOCAL time, shifting every timestamp by the UTC offset.
+ * Parse it explicitly as UTC instead.
  */
+function parseUtc(dateStr: string): Date {
+  let iso = dateStr.includes("T") ? dateStr : dateStr.replace(" ", "T");
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(iso)) iso += "Z";
+  return new Date(iso);
+}
+
 export function formatTimestamp(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = parseUtc(dateStr);
+  if (isNaN(date.getTime())) return "";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);

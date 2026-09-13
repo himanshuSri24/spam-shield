@@ -19,11 +19,22 @@ class SpamShieldCallScreeningService : CallScreeningService() {
 
     companion object {
         private const val TAG = "SpamShieldScreening"
+
+        /**
+         * Never write a full phone number to logcat. This app's entire promise
+         * is that caller numbers stay on the device and go nowhere — a debug
+         * log is somewhere, so numbers are masked to their last 4 digits.
+         */
+        internal fun redact(number: String?): String {
+            if (number.isNullOrEmpty()) return "<empty>"
+            if (number.length <= 4) return "*".repeat(number.length)
+            return "*".repeat(number.length - 4) + number.takeLast(4)
+        }
     }
 
     override fun onScreenCall(callDetails: Call.Details) {
         val phoneNumber = callDetails.handle?.schemeSpecificPart ?: ""
-        Log.d(TAG, "Screening call from: $phoneNumber")
+        Log.d(TAG, "Screening call from: ${redact(phoneNumber)}")
 
         if (phoneNumber.isEmpty()) {
             respondToCall(callDetails, CallResponse.Builder().build())
@@ -34,7 +45,7 @@ class SpamShieldCallScreeningService : CallScreeningService() {
             val matchResult = checkAgainstRules(phoneNumber)
 
             if (matchResult != null) {
-                Log.d(TAG, "BLOCKING call from: $phoneNumber (rule #${matchResult.ruleId}, type=${matchResult.matchType}, pattern=${matchResult.pattern})")
+                Log.d(TAG, "BLOCKING call from: ${redact(phoneNumber)} (rule #${matchResult.ruleId}, type=${matchResult.matchType})")
                 val response = CallResponse.Builder()
                     .setDisallowCall(true)
                     .setRejectCall(true)
@@ -44,7 +55,7 @@ class SpamShieldCallScreeningService : CallScreeningService() {
                 respondToCall(callDetails, response)
                 logBlockedCall(phoneNumber, matchResult.ruleId)
             } else {
-                Log.d(TAG, "ALLOWING call from: $phoneNumber")
+                Log.d(TAG, "ALLOWING call from: ${redact(phoneNumber)}")
                 respondToCall(callDetails, CallResponse.Builder().build())
             }
         } catch (e: Exception) {
@@ -70,7 +81,7 @@ class SpamShieldCallScreeningService : CallScreeningService() {
         }
 
         val normalizedNumber = normalizeNumber(phoneNumber)
-        Log.d(TAG, "Normalized: '$phoneNumber' -> '$normalizedNumber', checking ${jsonArray.length()} rules")
+        Log.d(TAG, "Normalized: '${redact(phoneNumber)}' -> '${redact(normalizedNumber)}', checking ${jsonArray.length()} rules")
 
         for (i in 0 until jsonArray.length()) {
             val ruleObj = jsonArray.getJSONObject(i)
@@ -88,7 +99,7 @@ class SpamShieldCallScreeningService : CallScreeningService() {
                     try {
                         Regex(pattern, RegexOption.IGNORE_CASE).containsMatchIn(normalizedNumber)
                     } catch (e: Exception) {
-                        Log.w(TAG, "Invalid regex pattern '$pattern': ${e.message}")
+                        Log.w(TAG, "Invalid regex in rule #$ruleId: ${e.message}")
                         false
                     }
                 }
@@ -96,7 +107,7 @@ class SpamShieldCallScreeningService : CallScreeningService() {
             }
 
             if (matches) {
-                Log.d(TAG, "Match! Rule #$ruleId ($matchType): '$pattern' matched '$phoneNumber'")
+                Log.d(TAG, "Match! Rule #$ruleId ($matchType) matched '${redact(phoneNumber)}'")
                 return MatchResult(ruleId, pattern, matchType)
             }
         }
@@ -112,18 +123,23 @@ class SpamShieldCallScreeningService : CallScreeningService() {
     private fun logBlockedCall(phoneNumber: String, matchedRuleId: Int) {
         try {
             val prefs = applicationContext.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
-            val pendingJson = prefs.getString("pending_blocked_calls", "[]") ?: "[]"
-            val pendingArray = JSONArray(pendingJson)
 
+            // UTC in SQLite's own format ("yyyy-MM-dd HH:mm:ss"): everything in the
+            // blocked_calls table stays one format, one timezone, sortable as text.
+            val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+            fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
             val entry = JSONObject().apply {
                 put("phone_number", phoneNumber)
                 put("matched_rule_id", matchedRuleId)
-                put("blocked_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US).format(java.util.Date()))
+                put("blocked_at", fmt.format(java.util.Date()))
             }
-            pendingArray.put(entry)
 
-            prefs.edit().putString("pending_blocked_calls", pendingArray.toString()).apply()
-            Log.d(TAG, "Queued blocked call from: $phoneNumber (rule ID: $matchedRuleId), pending count: ${pendingArray.length()}")
+            synchronized(PendingQueueLock) {
+                val pendingArray = JSONArray(prefs.getString("pending_blocked_calls", "[]") ?: "[]")
+                pendingArray.put(entry)
+                prefs.edit().putString("pending_blocked_calls", pendingArray.toString()).apply()
+                Log.d(TAG, "Queued blocked call from: ${redact(phoneNumber)} (rule ID: $matchedRuleId), pending count: ${pendingArray.length()}")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error queuing blocked call", e)
         }

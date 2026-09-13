@@ -4,7 +4,11 @@
  */
 
 import * as SQLite from "expo-sqlite";
-import { getPendingBlockedCalls, syncRules } from "../modules/call-screener";
+import {
+  clearPendingBlockedCalls,
+  getPendingBlockedCalls,
+  syncRules,
+} from "../modules/call-screener";
 
 export type MatchType =
   | "exact"
@@ -37,19 +41,36 @@ export interface Stats {
   activeRules: number;
 }
 
-let db: SQLite.SQLiteDatabase | null = null;
+/**
+ * Single-connection guard. The PROMISE is cached, not the handle: on a cold
+ * start the dashboard fires stats + recent + drain + flush at once, and if
+ * every caller that saw `db === null` opened its own connection, the
+ * concurrent CREATE TABLEs deadlocked each other with "database is locked".
+ * Failed queries were swallowed by the hooks, so Rules/History rendered
+ * empty while the native side happily kept blocking. THE bug.
+ */
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export async function getDB(): Promise<SQLite.SQLiteDatabase> {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync("spamshield.db");
-    await initDB(db);
+export function getDB(): Promise<SQLite.SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const database = await SQLite.openDatabaseAsync("spamshield.db");
+      await initDB(database);
+      return database;
+    })().catch((e) => {
+      dbPromise = null; // let the next caller retry instead of caching a failure
+      throw e;
+    });
   }
-  return db;
+  return dbPromise;
 }
 
 async function initDB(database: SQLite.SQLiteDatabase): Promise<void> {
-  // Create tables
   await database.execAsync(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA busy_timeout = 3000;
+    PRAGMA foreign_keys = ON;
+
     CREATE TABLE IF NOT EXISTS rules (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pattern TEXT NOT NULL,
@@ -66,6 +87,47 @@ async function initDB(database: SQLite.SQLiteDatabase): Promise<void> {
       blocked_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (matched_rule_id) REFERENCES rules(id) ON DELETE SET NULL
     );
+  `);
+  await migrate(database);
+}
+
+/**
+ * One-time migrations, keyed by PRAGMA user_version.
+ * v1: normalize legacy blocked_at values (the old service wrote LOCAL time as
+ * "yyyy-MM-dd'T'HH:mm:ss" while the schema default was UTC with a space, so
+ * sorting and the Today/This-week stats were wrong), dedupe, and add the
+ * unique index that makes re-draining the same entry harmless.
+ */
+async function migrate(database: SQLite.SQLiteDatabase): Promise<void> {
+  const row = await database.getFirstAsync<{ user_version: number }>(
+    "PRAGMA user_version",
+  );
+  const version = row?.user_version ?? 0;
+  if (version >= 1) return;
+
+  // Legacy rows: 'T' separator means local device time from the old service.
+  // JS knows the device timezone, so convert here rather than guessing in SQL.
+  const legacy = await database.getAllAsync<{ id: number; blocked_at: string }>(
+    "SELECT id, blocked_at FROM blocked_calls WHERE blocked_at LIKE '%T%'",
+  );
+  for (const rowLegacy of legacy) {
+    const parsed = new Date(rowLegacy.blocked_at); // parsed as device-local
+    if (isNaN(parsed.getTime())) continue;
+    const utc = parsed.toISOString().slice(0, 19).replace("T", " ");
+    await database.runAsync("UPDATE blocked_calls SET blocked_at = ? WHERE id = ?", [
+      utc,
+      rowLegacy.id,
+    ]);
+  }
+
+  await database.execAsync(`
+    DELETE FROM blocked_calls WHERE id NOT IN (
+      SELECT MIN(id) FROM blocked_calls
+      GROUP BY phone_number, matched_rule_id, blocked_at
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_blocked_dedup
+      ON blocked_calls (phone_number, matched_rule_id, blocked_at);
+    PRAGMA user_version = 1;
   `);
 }
 
@@ -93,9 +155,26 @@ export async function flushDB(): Promise<void> {
  * The native service writes blocked calls to a SharedPreferences queue
  * (since it can't write to expo-sqlite directly), and this function
  * moves them into the proper database on the JS side.
+ *
+ * Order of operations matters: peek -> insert -> clear(count). The old
+ * clear-on-read version wiped the native queue BEFORE inserting, so any
+ * failed insert deleted history forever. The unique index + OR IGNORE make
+ * a re-drain of the same entries harmless, and the single-flight guard stops
+ * the dashboard/history/rules tabs (which all drain on focus) from
+ * double-clearing each other's entries.
  * Returns the number of calls imported.
  */
-export async function drainPendingBlockedCalls(): Promise<number> {
+let drainInFlight: Promise<number> | null = null;
+
+export function drainPendingBlockedCalls(): Promise<number> {
+  if (drainInFlight) return drainInFlight;
+  drainInFlight = doDrain().finally(() => {
+    drainInFlight = null;
+  });
+  return drainInFlight;
+}
+
+async function doDrain(): Promise<number> {
   try {
     const pendingJson = await getPendingBlockedCalls();
     const pending: {
@@ -108,11 +187,23 @@ export async function drainPendingBlockedCalls(): Promise<number> {
 
     const database = await getDB();
     for (const call of pending) {
+      // Entries queued by the pre-fix service carry local time with a 'T';
+      // normalize to the table's UTC "YYYY-MM-DD HH:MM:SS" format.
+      let ts = call.blocked_at;
+      if (ts.includes("T")) {
+        const parsed = new Date(ts);
+        if (!isNaN(parsed.getTime())) {
+          ts = parsed.toISOString().slice(0, 19).replace("T", " ");
+        }
+      }
       await database.runAsync(
-        "INSERT INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, ?)",
-        [call.phone_number, call.matched_rule_id, call.blocked_at],
+        "INSERT OR IGNORE INTO blocked_calls (phone_number, matched_rule_id, blocked_at) VALUES (?, ?, ?)",
+        [call.phone_number, call.matched_rule_id, ts],
       );
     }
+
+    // Only after every row is safely in SQLite does the native queue shrink.
+    await clearPendingBlockedCalls(pending.length);
 
     if (__DEV__)
       console.log(
@@ -213,7 +304,7 @@ export async function getBlockedCalls(
     `SELECT bc.*, r.pattern as matched_pattern
      FROM blocked_calls bc
      LEFT JOIN rules r ON bc.matched_rule_id = r.id
-     ORDER BY bc.blocked_at DESC
+     ORDER BY bc.blocked_at DESC, bc.id DESC
      LIMIT ?`,
     [limit],
   );
@@ -252,9 +343,10 @@ export async function getStats(): Promise<Stats> {
     "SELECT COUNT(*) as count FROM blocked_calls",
   );
 
+  // blocked_at is stored in UTC; "today" means the user's local day.
   const today = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM blocked_calls
-     WHERE date(blocked_at) = date('now')`,
+     WHERE date(blocked_at, 'localtime') = date('now', 'localtime')`,
   );
 
   const week = await database.getFirstAsync<{ count: number }>(

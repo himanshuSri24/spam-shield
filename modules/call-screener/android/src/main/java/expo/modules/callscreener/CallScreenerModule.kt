@@ -10,6 +10,13 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.Promise
 
+/**
+ * Shared lock for every read-modify-write on the pending_blocked_calls queue.
+ * The screening service appends while the module drains; without a common lock
+ * an append between the module's read and write would be silently dropped.
+ */
+object PendingQueueLock
+
 class CallScreenerModule : Module() {
 
     companion object {
@@ -192,6 +199,8 @@ class CallScreenerModule : Module() {
             }
         }
 
+        // Peek only. JS inserts into SQLite first, then calls
+        // clearPendingBlockedCalls(count); a failed insert loses nothing.
         AsyncFunction("getPendingBlockedCalls") { promise: Promise ->
             try {
                 val context = appContext.reactContext
@@ -200,14 +209,40 @@ class CallScreenerModule : Module() {
                     return@AsyncFunction
                 }
                 val prefs = context.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
-                val pendingJson = prefs.getString("pending_blocked_calls", "[]") ?: "[]"
-                // Clear the queue after reading
-                prefs.edit().putString("pending_blocked_calls", "[]").apply()
-                Log.d(TAG, "Drained pending blocked calls: $pendingJson")
+                val pendingJson = synchronized(PendingQueueLock) {
+                    prefs.getString("pending_blocked_calls", "[]") ?: "[]"
+                }
+                Log.d(TAG, "Peeked ${org.json.JSONArray(pendingJson).length()} pending blocked call(s)")
                 promise.resolve(pendingJson)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to get pending blocked calls", e)
                 promise.resolve("[]")
+            }
+        }
+
+        // Remove only the first `count` entries: anything the service appended
+        // after the peek survives for the next drain.
+        AsyncFunction("clearPendingBlockedCalls") { count: Int, promise: Promise ->
+            try {
+                val context = appContext.reactContext
+                if (context == null) {
+                    promise.resolve(false)
+                    return@AsyncFunction
+                }
+                val prefs = context.getSharedPreferences("SpamShieldRules", Context.MODE_PRIVATE)
+                synchronized(PendingQueueLock) {
+                    val current = org.json.JSONArray(prefs.getString("pending_blocked_calls", "[]") ?: "[]")
+                    val remaining = org.json.JSONArray()
+                    for (i in count until current.length()) {
+                        remaining.put(current.getJSONObject(i))
+                    }
+                    prefs.edit().putString("pending_blocked_calls", remaining.toString()).apply()
+                    Log.d(TAG, "Cleared $count drained call(s), ${remaining.length()} still pending")
+                }
+                promise.resolve(true)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to clear pending blocked calls", e)
+                promise.resolve(false)
             }
         }
 

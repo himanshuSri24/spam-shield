@@ -38,11 +38,20 @@ export function openScreeningSettings(): Promise<boolean> {
 }
 
 /**
- * Drain the pending blocked calls queue from SharedPreferences.
+ * Peek at the pending blocked calls queue in SharedPreferences.
  * Returns a JSON string of [{phone_number, matched_rule_id, blocked_at}, ...].
- * The queue is cleared after reading.
+ * Does NOT clear: call clearPendingBlockedCalls(count) after the entries are
+ * safely inserted into SQLite, so a failed insert never loses history.
  */
 export function getPendingBlockedCalls(): Promise<string> {
   return CallScreenerModule.getPendingBlockedCalls();
+}
+
+/**
+ * Remove the first `count` entries from the pending queue (the ones just
+ * drained). Calls the service queued after the peek survive for the next drain.
+ */
+export function clearPendingBlockedCalls(count: number): Promise<boolean> {
+  return CallScreenerModule.clearPendingBlockedCalls(count);
 }
 
