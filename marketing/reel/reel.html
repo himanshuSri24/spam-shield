@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spam Shield — Reel</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+/* ============================================================
+   SPAM SHIELD — INSTAGRAM REEL  (1080 x 1920)
+   Deterministic motion graphics. Every visual property is a pure
+   function of time via render(t) — nothing depends on wall clock,
+   CSS transitions or rAF. That is what makes frame capture exact.
+   ============================================================ */
+
+:root{
+  /* App design tokens — copied from constants/theme.ts */
+  --cream:#FFF5EC;  --creamDark:#F5EBE0;  --cardBg:#FFFBF7;  --white:#fff;
+  --coral:#D4613A;  --coralLight:#E8845F; --coralPale:#FFE5D9; --coralDark:#B84E2B;
+  --sage:#8B9A7E;   --sagePale:#E8EDE4;
+  --charcoal:#2D2D2D; --textPrimary:#1A1A1A; --textSecondary:#6B6B6B;
+  --textMuted:#9B9B9B; --textLight:#B8B8B8;
+  --border:#E8DDD3; --borderLight:#F0E8DF; --borderDark:#D4C8BC;
+  /* Reel-only: the "night" ground for Act I */
+  --night:#141109;
+  --nightInk:#FBF3E8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;overflow:hidden}
+body{display:grid;place-items:center;min-height:100vh}
+
+#stage{
+  position:relative;width:1080px;height:1920px;overflow:hidden;
+  background:var(--night);
+  font-family:Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  transform-origin:center center;
+}
+/* Preview-only scaling so the 1080x1920 stage fits a laptop screen.
+   Capture runs at a 1080x1920 viewport where this is a no-op. */
+body.fit #stage{transform:scale(var(--fit,1))}
+
+.layer{position:absolute;inset:0}
+.act{position:absolute;inset:0;visibility:hidden;will-change:transform,opacity}
+
+/* ---------- type system ---------- */
+.line{display:block;text-align:center}
+.wmask{display:inline-block;overflow:hidden;line-height:1.24;margin-right:.26em;vertical-align:top}
+.wmask:last-child{margin-right:0}
+.w{display:inline-block;will-change:transform,opacity,filter}
+
+.hero{font-family:Playfair;font-weight:700;font-size:104px;letter-spacing:-.022em;color:var(--textPrimary);line-height:1.24}
+.hero.night{color:var(--nightInk)}
+.hero.sm{font-size:86px}
+.hero.xs{font-size:64px}
+.sub{font-family:Inter;font-weight:400;font-size:32px;color:var(--textSecondary);line-height:1.45}
+.kicker{font-family:Inter;font-weight:600;font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--textMuted)}
+.kicker.night{color:rgba(251,243,232,.45)}
+.coral{color:var(--coral)}
+
+/* ---------- Act I: incoming call cards ---------- */
+#pile{position:absolute;left:50%;top:0;width:0;height:0}
+.callcard{
+  position:absolute;left:-380px;top:-72px;width:760px;
+  background:rgba(255,255,255,.062);
+  border:1px solid rgba(251,243,232,.17);
+  border-radius:30px;padding:28px 34px;
+  display:flex;align-items:center;gap:26px;
+  will-change:transform,opacity,filter;
+}
+.callcard .avatar{
+  width:78px;height:78px;border-radius:999px;flex:none;
+  border:1.5px solid rgba(251,243,232,.26);
+  display:grid;place-items:center;color:rgba(251,243,232,.48)
+}
+.callcard .cc-lbl{font-family:Inter;font-weight:600;font-size:16px;letter-spacing:.2em;text-transform:uppercase;color:rgba(251,243,232,.40)}
+.callcard .cc-num{font-family:Inter;font-weight:500;font-size:44px;color:var(--nightInk);letter-spacing:.005em;margin-top:7px;white-space:nowrap}
+.callcard .cc-tag{margin-left:auto;flex:none;font-family:Inter;font-weight:500;font-size:19px;color:rgba(251,243,232,.36)}
+.strike{position:absolute;left:34px;top:50%;height:3px;background:var(--coral);border-radius:2px;transform-origin:left center}
+/* warm pool of light under the pile so the night ground isn't dead black */
+#glow{position:absolute;left:50%;top:1120px;width:1400px;height:1400px;margin:-700px 0 0 -700px;border-radius:999px;
+  background:radial-gradient(circle,rgba(212,97,58,.16) 0%,rgba(212,97,58,.05) 38%,rgba(212,97,58,0) 68%)}
+
+.wave{position:absolute;left:50%;top:1120px;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:999px;border:2px solid var(--coral);will-change:transform,opacity}
+
+/* the sweep line that kills the pile */
+#sweep{position:absolute;left:0;width:100%;height:2px;background:var(--coral);box-shadow:0 0 60px 12px rgba(212,97,58,.55)}
+
+/* ---------- Act III: mechanism diagram ---------- */
+.pill{
+  display:inline-flex;align-items:center;gap:16px;
+  padding:20px 34px;border-radius:999px;
+  border:1.5px solid var(--border);background:var(--cardBg);
+  font-family:Inter;font-weight:500;font-size:38px;color:var(--textPrimary);
+}
+.pill .dotlive{width:14px;height:14px;border-radius:999px;background:var(--coral);flex:none}
+#track{position:absolute;left:50%;width:2px;margin-left:-1px;background:linear-gradient(var(--border),var(--borderDark));transform-origin:top center}
+#travel{position:absolute;left:50%;width:22px;height:22px;margin-left:-11px;border-radius:999px;background:var(--coral);box-shadow:0 0 30px 6px rgba(212,97,58,.45)}
+#shieldNode{
+  position:absolute;left:50%;width:200px;height:200px;margin-left:-100px;border-radius:999px;
+  border:2px solid var(--coral);display:grid;place-items:center;
+}
+#shieldFill{position:absolute;inset:0;border-radius:999px;background:var(--coral)}
+#shieldGlyph{position:relative;width:86px;height:86px}
+.ripple{position:absolute;left:50%;width:200px;height:200px;margin-left:-100px;border-radius:999px;border:2px solid var(--coral)}
+.chip{
+  display:inline-flex;align-items:center;gap:14px;padding:14px 26px;border-radius:999px;
+  background:var(--coralPale);color:var(--coralDark);
+  font-family:Inter;font-weight:600;font-size:24px;letter-spacing:.06em
+}
+#rejected{font-family:Inter;font-weight:700;font-size:34px;letter-spacing:.34em;text-transform:uppercase;color:var(--coral)}
+
+/* ---------- Act III-b: them vs you ---------- */
+#divider{position:absolute;left:50%;width:1.5px;margin-left:-.75px;background:var(--border);transform-origin:top center}
+.colTitle{font-family:Inter;font-weight:600;font-size:20px;letter-spacing:.22em;text-transform:uppercase;color:var(--textMuted);text-align:center}
+.colLine{font-family:Playfair;font-weight:700;font-size:58px;color:var(--textPrimary);text-align:center;letter-spacing:-.015em}
+.ringArc{position:absolute;border:2px solid var(--coral);border-radius:999px}
+#flatline{position:absolute;height:2px;background:var(--borderDark)}
+
+/* ---------- phone device ---------- */
+#phone{
+  position:absolute;left:50%;top:0;width:520px;height:1060px;margin-left:-260px;
+  border-radius:58px;background:#100E08;
+  padding:14px;
+  box-shadow:0 44px 90px -30px rgba(45,30,20,.42), 0 0 0 1.5px rgba(45,45,45,.16);
+  will-change:transform,opacity;
+}
+#screen{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;background:var(--cream)}
+.scr{position:absolute;inset:0;padding:26px 24px 0;background:var(--cream)}
+
+/* dashboard screen */
+.ph-head{display:flex;align-items:center;justify-content:space-between}
+.ph-brand{display:flex;align-items:center;gap:9px}
+.ph-brand svg{width:30px;height:30px}
+.ph-name{font-family:Playfair;font-weight:700;font-size:25px;color:var(--charcoal);letter-spacing:-.01em}
+.ph-set{font-family:Inter;font-weight:600;font-size:14px;color:var(--coral)}
+.ph-tag{font-family:Playfair;font-style:italic;font-weight:400;font-size:18px;color:var(--textSecondary);text-align:center;margin-top:8px}
+.ph-div{width:70px;height:1px;background:var(--borderDark);margin:20px auto}
+.statA{background:var(--coral);border:1px solid var(--coralDark);border-radius:17px;padding:22px;text-align:center}
+.statA .v{font-family:Playfair;font-weight:700;font-size:54px;color:#fff;line-height:1.08}
+.statA .l{font-family:Inter;font-weight:600;font-size:14px;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.86);margin-top:5px}
+.statA .s{font-family:Inter;font-weight:400;font-size:13px;color:rgba(255,255,255,.66);margin-top:2px}
+.statRow{display:flex;gap:13px;margin-top:13px}
+.statB{flex:1;background:var(--cardBg);border:1px solid var(--border);border-radius:17px;padding:20px 14px;text-align:center}
+.statB .v{font-family:Playfair;font-weight:700;font-size:42px;color:var(--charcoal);line-height:1.1}
+.statB .l{font-family:Inter;font-weight:600;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--textSecondary);margin-top:4px}
+.ph-sec{font-family:Playfair;font-weight:600;font-size:22px;color:var(--charcoal);margin:24px 0 11px}
+.recent{background:var(--cardBg);border:1px solid var(--border);border-radius:17px;overflow:hidden}
+.bci{display:flex;align-items:center;padding:14px 17px;border-bottom:1px solid var(--borderLight)}
+.bci:last-child{border-bottom:none}
+.bci .ic{width:36px;height:36px;border-radius:999px;background:var(--coralPale);color:var(--coral);display:grid;place-items:center;font-size:15px;font-weight:700;margin-right:13px;flex:none}
+.bci .num{font-family:Inter;font-weight:600;font-size:16px;color:var(--textPrimary)}
+.bci .pat{font-family:Inter;font-weight:400;font-size:12px;color:var(--textMuted);margin-top:2px}
+.bci .ts{font-family:Inter;font-weight:400;font-size:12px;color:var(--textMuted);margin-left:auto;flex:none}
+/* bottom tab bar — Dashboard / Rules / History, as in app/(tabs)/_layout.tsx */
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:92px;background:var(--cream);
+  border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:12px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--textMuted)}
+.tab.on{color:var(--coral)}
+.tab .tl{font-family:Inter;font-weight:600;font-size:11px;letter-spacing:.04em}
+
+/* add-rule screen */
+.ar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.ar-cancel{font-family:Inter;font-weight:500;font-size:15px;color:var(--textMuted)}
+.ar-title{font-family:Playfair;font-weight:700;font-size:23px;color:var(--charcoal)}
+.ar-save{font-family:Inter;font-weight:600;font-size:15px;color:var(--coral)}
+.ar-lbl{font-family:Inter;font-weight:600;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--textSecondary);margin-bottom:11px}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.mt{padding:11px 17px;border-radius:999px;border:1px solid var(--border);background:var(--cardBg);font-family:Inter;font-weight:500;font-size:15px;color:var(--textSecondary);white-space:nowrap}
+.mt.on{background:var(--coral);border-color:var(--coralDark);color:#fff}
+.ar-hint{font-family:Inter;font-weight:400;font-size:13px;color:var(--textMuted);margin-top:11px}
+.ar-input{background:#fff;border:1px solid var(--border);border-radius:14px;padding:17px;margin-top:2px;display:flex;align-items:center;min-height:62px}
+.ar-val{font-family:Inter;font-weight:500;font-size:23px;color:var(--textPrimary);letter-spacing:.02em}
+.ar-ph{font-family:Inter;font-weight:400;font-size:17px;color:var(--textLight)}
+#caret{width:2px;height:28px;background:var(--coral);margin-left:3px}
+.ar-btn{background:var(--coral);border-radius:14px;height:58px;display:grid;place-items:center;font-family:Inter;font-weight:600;font-size:17px;color:#fff;letter-spacing:.02em}
+
+/* ---------- Act V: struck list ---------- */
+.noItem{position:relative;display:inline-block;font-family:Inter;font-weight:500;font-size:40px;color:var(--textSecondary)}
+.noItem .bar{position:absolute;left:-6px;top:52%;height:3px;background:var(--coral);border-radius:2px;transform-origin:left center}
+
+/* ---------- Act VI: end card ---------- */
+#endLogo{width:190px;height:190px;color:var(--coral)}
+#endRule{height:1.5px;background:var(--borderDark);margin:0 auto}
+.badge{display:inline-block;padding:12px 22px;border-radius:999px;border:1.5px solid var(--border);font-family:Inter;font-weight:600;font-size:22px;letter-spacing:.16em;text-transform:uppercase;color:var(--textSecondary)}
+#cta{font-family:Inter;font-weight:600;font-size:34px;color:var(--coral);letter-spacing:.005em;text-align:center}
+#fine{font-family:Inter;font-weight:400;font-size:26px;color:var(--textMuted);text-align:center}
+
+/* ---------- film overlays ---------- */
+#vignette{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 78% at 50% 44%, rgba(0,0,0,0) 48%, rgba(0,0,0,.20) 100%)}
+#grain{position:absolute;inset:-80px;pointer-events:none;opacity:.032;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* preview-only safe-area guides (?guides=1) */
+#guides{position:absolute;inset:0;pointer-events:none;display:none}
+body.guides #guides{display:block}
+#guides .g{position:absolute;left:0;right:0;border-top:1px dashed rgba(0,200,255,.55)}
+#guides .gl{position:absolute;top:0;bottom:0;border-left:1px dashed rgba(0,200,255,.3)}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ============ ACT I — the problem (night) ============ -->
+  <div class="act" id="act1">
+    <div id="glow"></div>
+    <div class="layer" id="waves"></div>
+    <div id="pile"></div>
+    <div class="layer" id="a1text"></div>
+  </div>
+
+  <!-- ============ ACT II — the turn ============ -->
+  <div class="act" id="act2">
+    <div id="sweep"></div>
+    <div class="layer" id="a2text"></div>
+  </div>
+
+  <!-- ============ ACT III-a — the mechanism ============ -->
+  <div class="act" id="act3">
+    <div class="layer" id="a3text"></div>
+    <div id="track"></div>
+    <div id="travel"></div>
+    <div id="shieldNode"><div id="shieldFill"></div><div id="shieldGlyph"></div></div>
+    <div class="layer" id="ripples"></div>
+  </div>
+
+  <!-- ============ ACT III-b — them vs you ============ -->
+  <div class="act" id="act4">
+    <div id="divider"></div>
+    <div class="layer" id="a4art"></div>
+    <div class="layer" id="a4text"></div>
+  </div>
+
+  <!-- ============ ACT IV + V — product & privacy (share the phone) ====== -->
+  <div class="act" id="act5">
+    <div id="phone">
+      <div id="screen">
+        <div class="scr" id="scrAdd"></div>
+        <div class="scr" id="scrDash"></div>
+      </div>
+    </div>
+    <div class="layer" id="a5text"></div>
+    <div class="layer" id="a6text"></div>
+  </div>
+
+  <!-- ============ ACT VI — end card ============ -->
+  <div class="act" id="act7">
+    <div class="layer" id="a7"></div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="grain"></div>
+  <div id="guides">
+    <div class="g" style="top:120px"></div>
+    <div class="g" style="top:1620px"></div>
+    <div class="gl" style="left:88px"></div>
+    <div class="gl" style="right:88px;left:auto;border-left:1px dashed rgba(0,200,255,.3)"></div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   1. CONFIG — everything you might want to change lives here.
+   ========================================================================== */
+const CONFIG = {
+  // >>> SET THIS to your real repo before posting <<<
+  github: "github.com/himanshuSri24/spam-shield",
+  // Demo numbers shown on the dashboard. These are a product mockup —
+  // change them to whatever your own device actually shows.
+  stats: { total: 1284, today: 12, rules: 6 },
+  pattern: "+91140",            // the rule typed on screen
+  fine:    "Android 10+  ·  No ads  ·  No trackers",
+};
+
+const FPS = 60;
+const DURATION = 22.9;          // seconds of finished video
+
+/* ==========================================================================
+   2. Tiny deterministic motion library
+   ========================================================================== */
+const clamp = (v,a,b)=>v<a?a:(v>b?b:v);
+const inv   = (t,s,e)=>e===s?(t>=e?1:0):clamp((t-s)/(e-s),0,1);
+const lerp  = (a,b,p)=>a+(b-a)*p;
+const E = {
+  lin:   p=>p,
+  outExpo:p=>p>=1?1:1-Math.pow(2,-10*p),
+  out4:  p=>1-Math.pow(1-p,4),
+  out2:  p=>1-Math.pow(1-p,2),
+  in3:   p=>p*p*p,
+  inOut: p=>p<.5?8*p*p*p*p:1-Math.pow(-2*p+2,4)/2,
+  back:  p=>{const c=1.9;return 1+ (c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2)},
+  // critically-damped-ish spring, settles by p=1
+  spring:p=>p>=1?1:1-Math.exp(-7*p)*Math.cos(8.2*p),
+};
+// seeded pseudo-random: same value for the same index, forever
+const rnd = i => {const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+
+/** Set transform/opacity/filter in one shot. Always pass every prop you animate. */
+function st(el,p){
+  const x=p.x||0,y=p.y||0,s=p.s===undefined?1:p.s,r=p.r||0;
+  el.style.opacity = p.o===undefined?1:p.o;
+  el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${r}deg) scale(${s})`;
+  el.style.filter = p.b>0.05 ? `blur(${p.b}px)` : "none";
+}
+const D=(cls,html)=>{const d=document.createElement("div");if(cls)d.className=cls;if(html!=null)d.innerHTML=html;return d};
+
+/** Build a word-masked line. Returns el with el.__w = word spans. */
+function mkLine(text,cls,style){
+  const el=D("line "+(cls||""));
+  if(style)el.setAttribute("style",style);
+  el.__w=text.split(" ").map(word=>{
+    const m=D("wmask"),s=D("w");s.textContent=word;m.appendChild(s);el.appendChild(m);return s;
+  });
+  return el;
+}
+/** Reveal a masked line: words rise into view, then optionally exit upward. */
+function reveal(el,t,a,o={}){
+  const dur=o.dur??.66, stag=o.stag??.05, dist=o.dist??110;
+  const w=el.__w;
+  for(let i=0;i<w.length;i++){
+    const s=a+i*stag;
+    const p=E.outExpo(inv(t,s,s+dur));
+    let y=(1-p)*dist, op=p, bl=(1-p)*7;
+    if(o.out!=null){
+      const q=E.inOut(inv(t,o.out+i*(stag*.45),o.out+i*(stag*.45)+(o.outDur??.42)));
+      y-=q*dist*.85; op*=(1-q); bl+=q*9;
+    }
+    w[i].style.transform=`translateY(${y}%)`;
+    w[i].style.opacity=op;
+    w[i].style.filter=bl>.05?`blur(${bl}px)`:"none";
+  }
+}
+/** Simple fade+rise for a non-masked block. */
+function rise(el,t,a,o={}){
+  const dur=o.dur??.62, dist=o.dist??42;
+  const p=E.outExpo(inv(t,a,a+dur));
+  let y=(1-p)*dist, op=p, sc=o.scale?lerp(o.scale,1,E.out4(inv(t,a,a+dur))):1, bl=(1-p)*(o.blur??0);
+  if(o.out!=null){
+    const q=E.inOut(inv(t,o.out,o.out+(o.outDur??.4)));
+    y-=q*28; op*=(1-q); bl+=q*7;
+  }
+  st(el,{y:y+(o.y||0),x:o.x||0,o:op,s:sc,b:bl});
+}
+/** Show/hide an act container and apply a slow camera push. */
+function act(el,t,a,b,push=.028){
+  const on = t>=a-.001 && t<b;
+  el.style.visibility = on?"visible":"hidden";
+  if(!on) return false;
+  const p=inv(t,a,b);
+  el.style.transform=`scale(${1+p*push})`;
+  return true;
+}
+
+const SHIELD_SVG = `<svg viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M0 3C0 2.20435 0.316071 1.44129 0.87868 0.87868C1.44129 0.316071 2.20435 0 3 0H4.372C5.232 0 5.982 0.586 6.191 1.42L7.296 5.843C7.38488 6.20101 7.36647 6.57726 7.24307 6.92489C7.11966 7.27252 6.89672 7.57616 6.602 7.798L5.309 8.768C5.174 8.869 5.145 9.017 5.183 9.12C5.74767 10.6547 6.63899 12.0484 7.79531 13.2047C8.95162 14.361 10.3453 15.2523 11.88 15.817C11.983 15.855 12.13 15.826 12.232 15.691L13.202 14.398C13.4238 14.1033 13.7275 13.8803 14.0751 13.7569C14.4227 13.6335 14.799 13.6151 15.157 13.704L19.58 14.809C20.414 15.018 21 15.768 21 16.629V18C21 18.7956 20.6839 19.5587 20.1213 20.1213C19.5587 20.6839 18.7956 21 18 21H15.75C7.052 21 0 13.948 0 5.25V3Z" fill="currentColor"/>
+<path d="M14.4688 0.000541627C14.1405 0.06175 13.7548 0.193917 13.1623 0.397042L12.8519 0.502667C11.2231 1.06058 10.409 1.339 10.2048 1.63042C10.0043 1.91533 10 2.75058 10 4.40808L14.4688 2.9185V0.000541627ZM14.4688 3.77433L10 5.26392V5.37279C10 8.42671 12.2961 9.90871 13.737 10.5381C14.0132 10.6589 14.192 10.7369 14.4688 10.7721V3.77433ZM15.2813 10.7727V3.77433L19.75 5.26392V5.37279C19.75 8.42671 17.4539 9.90871 16.013 10.5381C15.7368 10.6589 15.558 10.7375 15.2813 10.7727ZM15.2813 2.9185V0C15.6095 0.0612083 15.9952 0.193375 16.5878 0.3965L16.8981 0.502667C18.5269 1.06004 19.341 1.33846 19.5453 1.62987C19.7457 1.91479 19.75 2.75004 19.75 4.407L15.2813 2.9185Z" fill="currentColor"/></svg>`;
+
+/* ==========================================================================
+   3. Timeline — one place to retime the whole film
+   ========================================================================== */
+const T = {
+  a1:0.00,  a1End:4.10,
+  a2:4.10,  sweep:4.18, flip:4.86, turn:5.34, a2End:6.40,
+  a3:6.40,  a3End:9.30,
+  a4:9.30,  a4End:11.30,
+  a5:11.30, dash:13.05, a5End:15.70,      // product (add-rule -> dashboard)
+  a6:15.70, a6End:19.05,                   // privacy (same phone, shrunk)
+  a7:19.05, END:22.60,
+};
+
+/* ==========================================================================
+   4. Build the DOM once
+   ========================================================================== */
+
+/* ---- ACT I: ring waves + a pile of unknown calls ---- */
+const WAVE_AT=[0.10,0.84,1.50,2.02,2.42,2.74];
+const waves=WAVE_AT.map(()=>{const w=D("wave");document.getElementById("waves").appendChild(w);return w});
+
+// Real-looking Indian telemarketer ranges — the same prefixes the app ships as presets.
+const NUMS=["+91 140 338 2991","+91 1800 419 0022","+91 120 476 8810","+91 160 902 3374",
+            "+91 140 771 5509","+91 1800 208 6641","+91 120 335 9017"];
+const CARD_AT=[0.12,0.86,1.52,2.04,2.44,2.76,3.02];
+const PILE_Y=1120, STEP=72;      // stack origin, and how far each card recedes
+const pile=document.getElementById("pile");
+const cards=NUMS.map((n,i)=>{
+  const c=D("callcard",
+    `<div class="avatar"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6">
+       <path d="M12 13a4 4 0 100-8 4 4 0 000 8zM4.5 20a7.5 7.5 0 0115 0"/></svg></div>
+     <div><div class="cc-lbl">Incoming call</div><div class="cc-num">${n}</div></div>
+     <div class="cc-tag">Unknown</div>`);
+  const s=D("strike");c.appendChild(s);c.__strike=s;
+  c.style.zIndex=String(10+i);
+  pile.appendChild(c);return c;
+});
+
+const a1text=document.getElementById("a1text");
+const L1a=mkLine("Unknown number.","hero night","position:absolute;left:88px;right:88px;top:430px");
+const L1b=mkLine("Again.","hero night","position:absolute;left:88px;right:88px;top:430px");
+const L1c=mkLine("And again.","hero night","position:absolute;left:88px;right:88px;top:430px");
+const L1d=mkLine("Every. Single. Day.","hero night sm","position:absolute;left:88px;right:88px;top:1430px");
+[L1a,L1b,L1c,L1d].forEach(l=>a1text.appendChild(l));
+
+/* ---- ACT II: the turn ---- */
+const L2=mkLine("What if it never rang?","hero","position:absolute;left:88px;right:88px;top:790px");
+document.getElementById("a2text").appendChild(L2);
+
+/* ---- ACT III-a: mechanism ---- */
+const a3text=document.getElementById("a3text");
+const K3  = mkLine("An unknown number calls","kicker","position:absolute;left:88px;right:88px;top:352px");
+const PILL = D("","");
+PILL.setAttribute("style","position:absolute;left:0;right:0;top:412px;text-align:center");
+PILL.innerHTML=`<span class="pill"><span class="dotlive"></span>+91 140 338 2991</span>`;
+const K3b = mkLine("Checked against your rules","kicker","position:absolute;left:88px;right:88px;top:1074px");
+const CHIP = D("","");
+CHIP.setAttribute("style","position:absolute;left:0;right:0;top:1132px;text-align:center");
+CHIP.innerHTML=`<span class="chip">MATCH · ${CONFIG.pattern} · STARTS WITH</span>`;
+const REJ = D("","");
+REJ.setAttribute("style","position:absolute;left:0;right:0;top:1214px;text-align:center");
+REJ.innerHTML=`<span id="rejected">Rejected</span>`;
+const L3 = mkLine("Before your phone ever rings.","hero sm","position:absolute;left:88px;right:88px;top:1330px");
+[K3,PILL,K3b,CHIP,REJ,L3].forEach(e=>a3text.appendChild(e));
+document.getElementById("shieldGlyph").innerHTML=SHIELD_SVG;
+document.getElementById("shieldGlyph").style.color="var(--coral)";
+const ripples=[0,1,2].map(()=>{const r=D("ripple");document.getElementById("ripples").appendChild(r);return r});
+
+/* ---- ACT III-b: them vs you ---- */
+const a4art=document.getElementById("a4art"), a4text=document.getElementById("a4text");
+const arcs=[0,1,2,3].map(i=>{const a=D("ringArc");a4art.appendChild(a);return a});
+const handset=D("","");
+handset.setAttribute("style","position:absolute;left:270px;top:700px;width:0;height:0");
+handset.innerHTML=`<svg viewBox="0 0 24 24" width="104" height="104" style="position:absolute;left:-52px;top:-52px;color:var(--coral)" fill="currentColor">
+  <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.24.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z"/></svg>`;
+a4art.appendChild(handset);
+const youPhone=D("","");
+youPhone.setAttribute("style","position:absolute;left:810px;top:700px;width:0;height:0");
+youPhone.innerHTML=`<svg viewBox="0 0 24 24" width="104" height="104" style="position:absolute;left:-52px;top:-52px;color:var(--textMuted)" fill="none" stroke="currentColor" stroke-width="1.4">
+  <rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 18.5h3"/></svg>`;
+a4art.appendChild(youPhone);
+const flat=D("","");flat.id="flatline";
+flat.setAttribute("style","position:absolute;left:636px;top:860px;width:348px;height:2px;background:var(--borderDark)");
+a4art.appendChild(flat);
+
+const CT1=mkLine("Them","colTitle","position:absolute;left:88px;width:364px;top:500px");
+const CT2=mkLine("You","colTitle","position:absolute;left:628px;width:364px;top:500px");
+const CL1=mkLine("A normal ring.","colLine","position:absolute;left:70px;width:400px;top:960px");
+const CL2=mkLine("Silence.","colLine","position:absolute;left:610px;width:400px;top:960px");
+const L4=mkLine("The caller never knows they were screened.","sub","position:absolute;left:150px;right:150px;top:1290px");
+[CT1,CT2,CL1,CL2,L4].forEach(e=>a4text.appendChild(e));
+
+/* ---- ACT IV: phone screens ---- */
+const MT=[["Exact Number",0],["Starts With",1],["Ends With",0],["Contains",0],["Regex",0]];
+document.getElementById("scrAdd").innerHTML=`
+  <div class="ar-head"><span class="ar-cancel">Cancel</span><span class="ar-title">New Rule</span><span class="ar-save">Save</span></div>
+  <div class="ar-lbl">Match Type</div>
+  <div class="chips" id="mtRow">${MT.map(([l,on])=>`<span class="mt${on?" on":""}">${l}</span>`).join("")}</div>
+  <div class="ar-hint">Blocks numbers starting with these digits</div>
+  <div style="height:26px"></div>
+  <div class="ar-lbl">Pattern</div>
+  <div class="ar-input"><span class="ar-val" id="patVal"></span><span id="caret"></span></div>
+  <div style="height:22px"></div>
+  <div class="ar-lbl">Label (optional)</div>
+  <div class="ar-input"><span class="ar-ph">e.g. Telemarketer calls</span></div>
+  <div style="height:34px"></div>
+  <div class="ar-btn" id="saveBtn">Save Rule</div>`;
+const patVal=document.getElementById("patVal"), caret=document.getElementById("caret"),
+      saveBtn=document.getElementById("saveBtn"), mtRow=document.getElementById("mtRow");
+const mtChips=[...mtRow.children];
+
+const RECENT=[["+91 140 338 2991","+91140","2m ago"],["+91 1800 419 0022","+911800","18m ago"],["+91 120 476 8810","+91120","1h ago"]];
+document.getElementById("scrDash").innerHTML=`
+  <div class="ph-head" id="dHead">
+    <div style="width:36px"></div>
+    <div class="ph-brand"><span style="color:var(--coral);display:block;width:30px;height:30px">${SHIELD_SVG}</span><span class="ph-name">Spam Shield</span></div>
+    <span class="ph-set">Settings</span></div>
+  <div class="ph-tag" id="dTag">Your calls, your rules.</div>
+  <div class="ph-div"></div>
+  <div class="statA" id="dStat"><div class="v" id="dVal">0</div><div class="l">Calls Blocked</div><div class="s">All time</div></div>
+  <div class="statRow"><div class="statB" id="dB1"><div class="v">${CONFIG.stats.today}</div><div class="l">Today</div></div>
+    <div class="statB" id="dB2"><div class="v">${CONFIG.stats.rules}</div><div class="l">Active Rules</div></div></div>
+  <div class="ph-sec" id="dSec">Recent Blocks</div>
+  <div class="recent" id="dRec">${RECENT.map(([n,p,ts])=>
+    `<div class="bci"><div class="ic">✕</div><div><div class="num">${n}</div><div class="pat">Matched: ${p}</div></div><div class="ts">${ts}</div></div>`).join("")}</div>
+  <div class="tabbar" id="dTabs">
+    <div class="tab on"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg><span class="tl">Dashboard</span></div>
+    <div class="tab"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="tl">Rules</span></div>
+    <div class="tab"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg><span class="tl">History</span></div>
+  </div>`;
+const dVal=document.getElementById("dVal"), dStat=document.getElementById("dStat"),
+      dHead=document.getElementById("dHead"), dTag=document.getElementById("dTag"),
+      dSec=document.getElementById("dSec"), dRec=document.getElementById("dRec"),
+      dB1=document.getElementById("dB1"), dB2=document.getElementById("dB2"),
+      dTabs=document.getElementById("dTabs");
+const recRows=[...dRec.children];
+const phone=document.getElementById("phone"), scrAdd=document.getElementById("scrAdd"), scrDash=document.getElementById("scrDash");
+
+const a5text=document.getElementById("a5text");
+const L5a=mkLine("You write the rules.","hero xs","position:absolute;left:88px;right:88px;top:1408px");
+const L5b=mkLine("Five ways to match — including regex.","sub","position:absolute;left:120px;right:120px;top:1492px");
+[L5a,L5b].forEach(e=>a5text.appendChild(e));
+
+/* ---- ACT V: privacy ---- */
+const a6text=document.getElementById("a6text");
+const L6=mkLine("Nothing leaves your phone.","hero sm","position:absolute;left:88px;right:88px;top:1058px");
+a6text.appendChild(L6);
+const NOS=["Servers","Cloud databases","Analytics","Your contacts"];
+const noItems=NOS.map((txt,i)=>{
+  const wrap=D("");
+  wrap.setAttribute("style",`position:absolute;left:0;right:0;top:${1298+i*66}px;text-align:center`);
+  const it=D("noItem",`${txt}<span class="bar"></span>`);
+  wrap.appendChild(it);a6text.appendChild(wrap);
+  wrap.__bar=it.querySelector(".bar");wrap.__it=it;return wrap;
+});
+const L6b=mkLine("Local database. No internet needed.","sub","position:absolute;left:120px;right:120px;top:1586px");
+a6text.appendChild(L6b);
+
+/* ---- ACT VI: end card ---- */
+const a7=document.getElementById("a7");
+const EL=D("");EL.setAttribute("style","position:absolute;left:50%;top:560px;margin-left:-95px");
+EL.innerHTML=`<div id="endLogo">${SHIELD_SVG}</div>`;a7.appendChild(EL);
+const E1=mkLine("Spam Shield","hero","position:absolute;left:88px;right:88px;top:826px");
+const ER=D("");ER.setAttribute("style","position:absolute;left:50%;top:968px;margin-left:-130px;width:260px");
+ER.innerHTML=`<div id="endRule"></div>`;a7.appendChild(ER);
+const E2=mkLine("Your calls, your rules.","","position:absolute;left:88px;right:88px;top:1000px;font-family:Playfair;font-style:italic;font-weight:400;font-size:52px;color:var(--textSecondary)");
+const BADGES=D("");BADGES.setAttribute("style","position:absolute;left:0;right:0;top:1168px;text-align:center");
+BADGES.innerHTML=["Free","Open source","No account"].map(b=>`<span class="badge" style="margin:0 7px">${b}</span>`).join("");
+const CTA=D("");CTA.setAttribute("style","position:absolute;left:88px;right:88px;top:1292px");
+CTA.innerHTML=`<div id="cta">${CONFIG.github}</div>`;
+const FINE=D("");FINE.setAttribute("style","position:absolute;left:88px;right:88px;top:1360px");
+FINE.innerHTML=`<div id="fine">${CONFIG.fine}</div>`;
+[E1,ER,E2,BADGES,CTA,FINE].forEach(e=>a7.appendChild(e));
+const endLogo=document.getElementById("endLogo"), endRule=document.getElementById("endRule");
+
+/* ==========================================================================
+   5. render(t) — the film
+   ========================================================================== */
+const stage=document.getElementById("stage");
+const act1=document.getElementById("act1"),act2=document.getElementById("act2"),
+      act3=document.getElementById("act3"),act4=document.getElementById("act4"),
+      act5=document.getElementById("act5"),act7=document.getElementById("act7");
+const sweep=document.getElementById("sweep"), track=document.getElementById("track"),
+      travel=document.getElementById("travel"), shieldNode=document.getElementById("shieldNode"),
+      shieldFill=document.getElementById("shieldFill"), grain=document.getElementById("grain"),
+      divider=document.getElementById("divider");
+
+function render(t){
+  /* ---------- ground colour: night until the turn, cream after ---------- */
+  const flip=E.inOut(inv(t,T.flip,T.flip+.62));
+  const mix=(a,b,p)=>`rgb(${Math.round(lerp(a[0],b[0],p))},${Math.round(lerp(a[1],b[1],p))},${Math.round(lerp(a[2],b[2],p))})`;
+  stage.style.background=mix([20,17,9],[255,245,236],flip);
+
+  /* film grain drifts on a fixed pseudo-random walk (deterministic) */
+  const f=Math.round(t*FPS);
+  grain.style.backgroundPosition=`${Math.round(rnd(f)*200)}px ${Math.round(rnd(f+91)*200)}px`;
+
+  /* ================= ACT I ================= */
+  // Act I's pile must outlive Act I's own beat: the sweep strikes it out and
+  // the ground flip dissolves it, both of which happen inside Act II.
+  if(act(act1,t,T.a1,T.flip+.52,.05)){
+    const fade=1-E.in3(inv(t,T.flip-.02,T.flip+.34));   // pile dissolves as ground flips
+    // ring waves
+    waves.forEach((w,i)=>{
+      const p=inv(t,WAVE_AT[i],WAVE_AT[i]+1.5);
+      st(w,{s:lerp(.18,3.1,E.out2(p)),o:(p>0&&p<1?(1-p)*.5:0)*fade});
+      w.style.borderWidth=`${lerp(3,.6,p)}px`;
+    });
+    /* The pile reads as a notification stack: the newest card sits in front,
+       fully legible, and every earlier one is pushed back — up, smaller,
+       dimmer, softer. Chaos that you can still read. */
+    st(pile,{y:PILE_Y, x:Math.sin(t*23)*(2.4*inv(t,2.9,3.9))});   // micro-shake at the peak
+    const arrived=CARD_AT.map(a=>E.outExpo(inv(t,a,a+.50)));
+    const sweepY=lerp(-40,2000,E.inOut(inv(t,T.sweep,T.sweep+.56)));
+    cards.forEach((c,i)=>{
+      let depth=0; for(let j=i+1;j<cards.length;j++) depth+=arrived[j];
+      const own=arrived[i];
+      const cardY=PILE_Y-depth*STEP;                       // true screen y of this card
+      const struck=t>=T.sweep && sweepY>cardY;
+      st(c,{
+        x:(rnd(i)-.5)*70*(1-own),
+        y:-depth*STEP + (1-own)*170,
+        r:(rnd(i+7)-.5)*2.6,
+        s:(1-depth*.052)*lerp(.94,1,own)*(struck?.985:1),
+        o:own*clamp(1-depth*.17,0,1)*(struck?.18:1)*fade,
+        b:depth*.9+(1-own)*10,
+      });
+      const sa=T.sweep+clamp((cardY+60)/2040,0,1)*.56;     // strike lands as the line passes
+      const sp=struck?E.out4(inv(t,sa,sa+.28)):0;
+      c.__strike.style.width=`${760-68}px`;
+      c.__strike.style.transform=`scaleX(${sp})`;
+      c.__strike.style.opacity=sp?".85":"0";
+    });
+    st(document.getElementById("glow"),{o:fade*E.out2(inv(t,0,1.4))});
+    // kinetic type
+    reveal(L1a,t,.16,{out:1.62,dist:120});
+    reveal(L1b,t,1.80,{out:2.52,dist:120});
+    reveal(L1c,t,2.66,{out:3.26,dist:120});
+    reveal(L1d,t,3.32,{stag:.10,out:T.flip-.06,outDur:.34,dist:120});
+  }
+
+  /* ================= ACT II — the turn ================= */
+  if(act(act2,t,T.a2,T.a3,.02)){
+    const sp=E.inOut(inv(t,T.sweep,T.sweep+.56));
+    sweep.style.top=`${lerp(-40,2000,sp)}px`;
+    sweep.style.opacity=String((sp>0&&sp<1)?1:0);
+    reveal(L2,t,T.turn,{stag:.055,out:T.a2End-.34,outDur:.4,dist:118});
+  }
+
+  /* ================= ACT III-a — the mechanism ================= */
+  // Held slightly past its beat so the exit animations actually finish on
+  // screen instead of being cut off by the act boundary.
+  if(act(act3,t,T.a3,T.a4+.12,.024)){
+    const A=T.a3;
+    reveal(K3,t,A+.06,{dur:.5,stag:.03,out:T.a4-.4,outDur:.34,dist:100});
+    rise(PILL,t,A+.14,{dist:34,scale:.94,out:T.a4-.4});
+
+    // vertical track draws down, then a dot travels it
+    const tp=E.out4(inv(t,A+.34,A+.62));
+    track.style.top="590px"; track.style.height="200px";
+    st(track,{s:1,o:tp}); track.style.transform=`scaleY(${tp})`;
+    const dp=E.inOut(inv(t,A+.58,A+.98));
+    st(travel,{y:lerp(586,790,dp),o:(dp>0&&dp<1)?1:0,s:lerp(1,.5,dp)});
+
+    // shield node: outline -> fills coral on impact
+    const ip=E.spring(inv(t,A+.02,A+.6));                  // node arrives
+    const hit=E.out4(inv(t,A+.96,A+1.22));                 // fill on impact
+    shieldNode.style.top="830px";
+    st(shieldNode,{o:ip,s:lerp(.8,1,ip)+hit*.04});
+    shieldFill.style.opacity=String(hit);
+    document.getElementById("shieldGlyph").style.color=hit>.5?"#fff":"var(--coral)";
+    ripples.forEach((r,i)=>{
+      const rp=inv(t,A+.98+i*.13,A+.98+i*.13+.85);
+      r.style.top="830px";
+      st(r,{s:lerp(1,2.5,E.out2(rp)),o:(rp>0&&rp<1)?(1-rp)*.5:0});
+    });
+
+    reveal(K3b,t,A+1.02,{dur:.5,stag:.03,out:T.a4-.4,outDur:.34,dist:100});
+    rise(CHIP,t,A+1.34,{dist:26,scale:.9,out:T.a4-.4});
+    rise(REJ,t,A+1.62,{dist:20,scale:.86,out:T.a4-.4});
+    reveal(L3,t,A+2.02,{stag:.05,out:T.a4-.3,outDur:.36,dist:114});
+  }
+
+  /* ================= ACT III-b — them vs you ================= */
+  if(act(act4,t,T.a4,T.a5,.022)){
+    const A=T.a4;
+    // Builds immediately so it overlaps Act III-a's exit — no blank frames.
+    const dp=E.out4(inv(t,A,A+.40));
+    divider.style.top="480px"; divider.style.height="900px";
+    divider.style.transform=`scaleY(${dp})`; divider.style.opacity=String(dp*.9);
+
+    reveal(CT1,t,A+.04,{dur:.46,stag:.03,out:T.a5-.36,outDur:.32,dist:100});
+    reveal(CT2,t,A+.10,{dur:.46,stag:.03,out:T.a5-.36,outDur:.32,dist:100});
+    rise(handset,t,A+.14,{dist:26,scale:.8,out:T.a5-.36});
+    rise(youPhone,t,A+.20,{dist:26,scale:.8,out:T.a5-.36});
+
+    // left: ringing arcs pulse forever. right: a dead-flat line.
+    arcs.forEach((a,i)=>{
+      const cyc=.95, p=((t-(A+.26)-i*.24)%cyc)/cyc;
+      const on=t>A+.26+i*.24;
+      const sz=lerp(120,300,E.out2(p));
+      a.style.left=`${270-sz/2}px`; a.style.top=`${700-sz/2}px`;
+      a.style.width=a.style.height=`${sz}px`;
+      a.style.opacity=String(on?(1-p)*.55*(1-E.in3(inv(t,T.a5-.4,T.a5-.05))):0);
+    });
+    const fl=E.out4(inv(t,A+.28,A+.74));
+    flat.style.transform=`scaleX(${fl})`; flat.style.opacity=String(fl*(1-E.in3(inv(t,T.a5-.4,T.a5-.05))));
+    flat.style.transformOrigin="left center";
+
+    reveal(CL1,t,A+.44,{dur:.6,stag:.05,out:T.a5-.34,outDur:.34,dist:112});
+    reveal(CL2,t,A+.56,{dur:.6,stag:.05,out:T.a5-.34,outDur:.34,dist:112});
+    reveal(L4,t,A+.98,{dur:.6,stag:.035,out:T.a5-.28,outDur:.32,dist:104});
+  }
+
+  /* ============ ACT IV + V — the product, then privacy ============ */
+  if(act(act5,t,T.a5,T.a7,.012)){
+    const A=T.a5;
+    /* --- phone: rises in, then shrinks & lifts for the privacy act --- */
+    const inP=E.spring(inv(t,A,A+1.0));
+    const shrink=E.inOut(inv(t,T.a6,T.a6+.72));
+    const outP=E.in3(inv(t,T.a7-.34,T.a7));
+    const ph={ y:lerp(lerp(1500,330,inP),268,shrink), s:lerp(lerp(.92,1,inP),.63,shrink),
+               o:(1-outP), b:(1-inP)*10 };
+    st(phone,ph);
+    phone.style.transformOrigin="center top";
+
+    /* --- screen A: add a rule --- */
+    const toDash=E.inOut(inv(t,T.dash,T.dash+.42));
+    st(scrAdd,{o:1-toDash,s:lerp(1,1.04,toDash),b:toDash*6});
+    const chars=Math.floor(E.lin(inv(t,A+.60,A+1.28))*CONFIG.pattern.length+.0001);
+    patVal.textContent=CONFIG.pattern.slice(0,chars);
+    const typing=t>A+.5&&t<A+1.45;
+    caret.style.opacity=String(typing?1:(t>A+.4? (Math.floor((t-A)*1.8)%2?0:1):0));
+    // "Starts With" chip pops when the pattern is in
+    mtChips.forEach((c,i)=>{
+      const pop=i===1?E.spring(inv(t,A+1.30,A+1.62)):1;
+      c.style.transform=`scale(${i===1?lerp(1,1.06,pop<1?pop:1)*(1+.0):1})`;
+      c.style.opacity="1";
+    });
+    const press=E.out4(inv(t,A+1.52,A+1.66))-E.out4(inv(t,A+1.66,A+1.80));
+    saveBtn.style.transform=`scale(${1-press*.035})`;
+    saveBtn.style.filter=`brightness(${1-press*.10})`;
+
+    /* --- screen B: the dashboard --- */
+    st(scrDash,{o:toDash,s:lerp(1.03,1,toDash),b:(1-toDash)*5});
+    scrDash.style.pointerEvents="none";
+    rise(dHead,t,T.dash+.06,{dist:16});
+    rise(dTag,t,T.dash+.12,{dist:16});
+    rise(dStat,t,T.dash+.20,{dist:26,scale:.93});
+    const cp=E.out4(inv(t,T.dash+.28,T.dash+1.30));
+    dVal.textContent=Math.round(cp*CONFIG.stats.total).toLocaleString();
+    rise(dB1,t,T.dash+.56,{dist:22,scale:.95});
+    rise(dB2,t,T.dash+.64,{dist:22,scale:.95});
+    rise(dSec,t,T.dash+.80,{dist:18});
+    rise(dRec,t,T.dash+.88,{dist:24,scale:.97});
+    recRows.forEach((r,i)=>rise(r,t,T.dash+.94+i*.12,{dist:20}));
+    rise(dTabs,t,T.dash+.14,{dist:26});
+
+    /* --- Act IV copy (below the phone) --- */
+    reveal(L5a,t,T.dash+1.18,{stag:.05,out:T.a6-.30,outDur:.3,dist:110});
+    reveal(L5b,t,T.dash+1.40,{stag:.035,out:T.a6-.26,outDur:.3,dist:104});
+
+    /* --- Act V copy (privacy) --- */
+    reveal(L6,t,T.a6+.28,{stag:.05,out:T.a7-.3,outDur:.32,dist:114});
+    noItems.forEach((w,i)=>{
+      const a=T.a6+.92+i*.30;
+      rise(w,t,a,{dist:20,out:T.a7-.26,outDur:.28});
+      const bp=E.out4(inv(t,a+.16,a+.40));
+      w.__bar.style.width=`${w.__it.offsetWidth+12}px`;
+      w.__bar.style.transform=`scaleX(${bp})`;
+      w.__bar.style.opacity=String(bp?.95:0);
+    });
+    reveal(L6b,t,T.a6+2.26,{stag:.035,out:T.a7-.22,outDur:.28,dist:100});
+  }
+
+  /* ================= ACT VI — end card ================= */
+  if(act(act7,t,T.a7,DURATION+1,.014)){
+    const A=T.a7;
+    const lp=E.spring(inv(t,A+.04,A+.78));
+    st(EL,{s:lerp(.7,1,lp),o:E.out4(inv(t,A+.04,A+.34)),y:(1-lp)*14});
+    reveal(E1,t,A+.40,{stag:.055,dist:118});
+    const rp=E.out4(inv(t,A+.74,A+1.12));
+    endRule.style.transform=`scaleX(${rp})`; endRule.style.opacity=String(rp);
+    reveal(E2,t,A+.90,{stag:.05,dist:110});
+    rise(BADGES,t,A+1.40,{dist:22,scale:.94});
+    rise(CTA,t,A+1.78,{dist:20});
+    rise(FINE,t,A+2.00,{dist:16});
+  }
+}
+
+/* ==========================================================================
+   6. Harness — exact seeking for capture, real-time playback for preview
+   ========================================================================== */
+window.DURATION=DURATION; window.FPS=FPS;
+window.seekTo=t=>{render(Math.max(0,Math.min(DURATION,t)));return true};
+const q=new URLSearchParams(location.search);
+const T0=q.has("t")?(parseFloat(q.get("t"))||0):0;
+window.__ready=false;
+// Fonts must be resolved before the first real paint, otherwise text metrics
+// (and therefore every centred line) shift mid-render.
+(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{
+  render(T0);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{window.__ready=true}));
+});
+
+if(q.has("guides"))document.body.classList.add("guides");
+render(T0);
+if(q.has("fit")||q.has("play")){
+  document.body.classList.add("fit");
+  const fit=()=>document.documentElement.style.setProperty("--fit",
+    Math.min(innerWidth/1080,innerHeight/1920).toFixed(4));
+  fit();addEventListener("resize",fit);
+}
+if(q.has("play")){
+  let t0=null;
+  const loop=ts=>{
+    if(t0===null)t0=ts;
+    let t=(ts-t0)/1000;
+    if(t>DURATION+.4){t0=ts;t=0}
+    render(t);requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

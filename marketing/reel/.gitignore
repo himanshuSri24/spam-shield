@@ -1,0 +1,11 @@
+# build artifacts
+.frames/
+.chrome-profile/
+stills/
+out/
+audio.wav
+# generated from node_modules/@expo-google-fonts (3 MB of base64)
+fonts.css
+
+# posting copy — keep local, not repo content
+CAPTION.md
